@@ -22,7 +22,7 @@ const groq = new Groq({
  * We use Mixtral or Llama-3 depending on what qrok has available, 
  * but standard qrok models are available via 'llama3-70b-8192' typically.
  */
-const GROQ_MODEL = 'llama3-70b-8192';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 /**
  * Standard utility to run Groq API requests with robust retry logic.

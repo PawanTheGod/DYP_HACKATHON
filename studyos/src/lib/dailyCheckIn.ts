@@ -15,7 +15,7 @@ const groq = new Groq({
   dangerouslyAllowBrowser: true,
 });
 
-const GROQ_MODEL = 'llama3-70b-8192';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 export interface CheckInLogEntry {
   energyLevel: number;
