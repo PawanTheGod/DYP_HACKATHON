@@ -8,23 +8,28 @@ import { AnalyticsScreen } from './AnalyticsScreen';
 import { AIInsightsScreen } from './AIInsightsScreen';
 import { ActionModal } from './ActionModal';
 import { SubjectManagement } from './SubjectManagement';
+import { SessionActiveView } from './SessionActiveView';
 import { ScheduleBlock } from '../types';
+
+import { WelcomeScreen } from './WelcomeScreen';
 
 type Tab = 'home' | 'schedule' | 'analytics' | 'insights';
 
 export const Dashboard: React.FC = () => {
-  const { markSessionComplete, markSessionMissed } = useAppContext();
+  const { markSessionComplete, markSessionMissed, isOnboardingComplete, userProfile } = useAppContext();
 
   const [activeTab, setActiveTab]               = useState<Tab>('home');
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [showSettings, setShowSettings]         = useState(false);
   const [actionBlock, setActionBlock]           = useState<ScheduleBlock | null>(null);
   const [actionType, setActionType]             = useState<'complete' | 'miss'>('complete');
+  const [showOnboarding, setShowOnboarding]     = useState(false);
+  const [activeSession, setActiveSession]       = useState<ScheduleBlock | null>(null);
 
-  // Called from HomeDashboard → "Start Session" => opens ActionModal for proof
+
+  // Called from HomeDashboard → "Start Session" => opens focus view
   const handleStartSession = (block: ScheduleBlock) => {
-    setActionBlock(block);
-    setActionType('complete');
+    setActiveSession(block);
   };
 
   // Called from HomeDashboard / ScheduleView → "Mark Missed"
@@ -35,6 +40,14 @@ export const Dashboard: React.FC = () => {
 
   const handleCloseAction = () => setActionBlock(null);
 
+  const handleSessionEnd = (completed: boolean) => {
+    if (activeSession) {
+      setActionBlock(activeSession);
+      setActionType(completed ? 'complete' : 'miss');
+      setActiveSession(null);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
@@ -43,6 +56,7 @@ export const Dashboard: React.FC = () => {
             onStartSession={handleStartSession}
             onMarkMissed={handleMarkMissed}
             onAddSubject={() => setShowSubjectModal(true)}
+            onStartOnboarding={() => setShowOnboarding(true)}
           />
         );
       case 'schedule':
@@ -68,10 +82,42 @@ export const Dashboard: React.FC = () => {
       <SidebarNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Main area */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen relative">
         <TopBar onSettingsClick={() => setShowSettings(s => !s)} />
 
+        {/* Onboarding Overlay */}
+        {showOnboarding && (
+          <div className="fixed inset-0 z-[100] bg-surface">
+            <div className="absolute top-6 right-6 z-[110]">
+              <button 
+                onClick={() => setShowOnboarding(false)}
+                className="p-3 bg-surface-container rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <WelcomeScreen />
+          </div>
+        )}
+
+        {/* Onboarding Banner - Restored as per user request */}
+        {!isOnboardingComplete && activeTab === 'home' && (
+          <div className="bg-primary/10 border-b border-primary/20 px-8 py-4 flex items-center justify-between animate-fade-in relative z-20">
+            <p className="text-sm font-body text-on-surface flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary text-xl icon-fill">info</span>
+              Complete your cognitive profile to unlock Sage Intelligence.
+            </p>
+            <button 
+              onClick={() => setShowOnboarding(true)}
+              className="text-sm font-headline font-bold bg-on-surface text-surface px-6 py-2 rounded-full hover:shadow-lg transition-all flex items-center gap-1 active:scale-95"
+            >
+              Start Onboarding <span className="material-symbols-outlined text-base">arrow_forward</span>
+            </button>
+          </div>
+        )}
+
         {/* If settings visible, show a simple overlay */}
+
         {showSettings && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/40 backdrop-blur-md" onClick={() => setShowSettings(false)}>
             <div className="bg-surface-container-lowest rounded-[2rem] p-8 w-full max-w-sm shadow-modal animate-scale-in" onClick={e => e.stopPropagation()}>
@@ -88,7 +134,16 @@ export const Dashboard: React.FC = () => {
         )}
 
         <div className="flex-1 pb-32 md:pb-8 overflow-y-auto">
-          {renderContent()}
+          {activeSession ? (
+            <div className="max-w-xl mx-auto px-6 py-8">
+              <SessionActiveView 
+                block={activeSession} 
+                onEndFlow={handleSessionEnd} 
+              />
+            </div>
+          ) : (
+            renderContent()
+          )}
         </div>
       </div>
 

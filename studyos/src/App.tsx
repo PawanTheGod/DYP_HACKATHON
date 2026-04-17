@@ -1,35 +1,70 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { Dashboard } from './components/Dashboard';
+import { LandingPage } from './components/LandingPage';
+import { AuthScreen } from './components/AuthScreen';
 
 import './styles/globals.css';
 import './styles/animations.css';
 import './styles/responsive.css';
+import { SplashScreen } from './components/SplashScreen';
 
 const AppContent: React.FC = () => {
   const { isOnboardingComplete, isLoading, userProfile } = useAppContext();
+  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'main' | null>(null);
 
-  if (isLoading) {
+  // Initial redirect once loading is done with a minimum splash time
+  React.useEffect(() => {
+    if (!isLoading && currentView === null) {
+      const timer = setTimeout(() => {
+        setCurrentView('landing');
+      }, 2000); // Ensure splash is seen for at least 2s
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, currentView]);
+
+
+  if (isLoading || currentView === null) {
+    return <SplashScreen />;
+  }
+
+  // If we are in the 'main' view, show Onboarding if needed, otherwise Dashboard
+  if (currentView === 'main') {
+    if (!isOnboardingComplete) {
+      return <WelcomeScreen />;
+    }
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
-        <div className="w-12 h-12 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin"></div>
-        <p className="mt-4 text-slate-500 font-medium">StudyOS is loading...</p>
+      <div className="min-h-screen bg-surface">
+        <Dashboard />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      {userProfile ? (
-        <Dashboard />
-      ) : (
-        <WelcomeScreen />
-      )}
-    </div>
-  );
+  // Handle Landing and Auth views
+  switch (currentView) {
+    case 'landing':
+      return (
+        <LandingPage 
+          isLoggedIn={!!userProfile}
+          onGetStarted={() => setCurrentView(userProfile ? 'main' : 'auth')} 
+          onLogin={() => setCurrentView('auth')} 
+        />
+      );
+    case 'auth':
+      return (
+        <AuthScreen 
+          onBack={() => setCurrentView('landing')} 
+          onAuthSuccess={() => setCurrentView('main')} 
+        />
+      );
+    default:
+      return <LandingPage isLoggedIn={!!userProfile} onGetStarted={() => setCurrentView('auth')} onLogin={() => setCurrentView('auth')} />;
+  }
 };
+
+
 
 const App: React.FC = () => {
   return (
@@ -42,3 +77,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

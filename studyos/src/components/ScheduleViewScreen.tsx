@@ -56,18 +56,19 @@ export const ScheduleViewScreen: React.FC<ScheduleViewScreenProps> = ({ onComple
   };
 
   return (
-    <main className="max-w-xl mx-auto px-6 pt-6 pb-32 flex flex-col gap-8">
+    <main className="max-w-xl mx-auto px-6 pt-10 pb-32 flex flex-col gap-10">
       {/* Header */}
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-6">
         <div>
-          <h1 className="text-[2.75rem] font-headline font-extrabold tracking-tight text-on-surface leading-tight">Schedule</h1>
-          <p className="font-body text-base text-on-surface-variant mt-1">
+          <h1 className="text-[3.25rem] font-headline font-extrabold tracking-tight text-on-surface leading-tight">Timeline</h1>
+          <p className="font-body text-base text-on-surface-variant mt-2 flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm text-primary">calendar_today</span>
             {selectedStr === todayStr ? "Today" : DAY_NAMES_FULL[selectedDate.getDay()]}, {selectedDate.toLocaleDateString('en-IN', { month: 'long', day: 'numeric' })}
           </p>
         </div>
 
         {/* Horizontal Day Selector */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-6 px-6">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
           {days.map((day, i) => {
             const dStr = day.toISOString().split('T')[0];
             const isSelected = dStr === selectedStr;
@@ -76,18 +77,19 @@ export const ScheduleViewScreen: React.FC<ScheduleViewScreenProps> = ({ onComple
               <button
                 key={i}
                 onClick={() => setSelectedDate(day)}
-                className={`flex flex-col items-center justify-center py-3 px-4 rounded-full min-w-[4rem] transition-transform active:scale-95 ease-in-out
+                className={`flex flex-col items-center justify-center py-4 px-5 rounded-[2rem] min-w-[4.5rem] transition-all duration-300 ease-spring
                   ${isSelected
-                    ? 'bg-primary text-on-primary shadow-[0_12px_32px_rgba(53,37,205,0.2)]'
-                    : isToday
-                    ? 'bg-surface-container-low text-on-surface shadow-sm'
-                    : 'bg-surface-container text-on-surface-variant'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/25 scale-105'
+                    : 'bg-white text-on-surface border border-outline-variant/10 hover:border-primary/20 hover:bg-primary/5'
                   }`}
               >
-                <span className={`font-label text-xs uppercase tracking-widest ${isSelected ? 'text-primary-fixed-dim' : ''}`}>
+                <span className={`font-label text-xs uppercase tracking-[0.15em] font-bold ${isSelected ? 'text-white/70' : 'text-outline'}`}>
                   {DAY_NAMES[day.getDay()]}
                 </span>
-                <span className="font-body text-lg font-medium mt-1">{day.getDate()}</span>
+                <span className="font-headline text-xl font-extrabold mt-1">{day.getDate()}</span>
+                {isToday && !isSelected && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1"></div>
+                )}
               </button>
             );
           })}
@@ -96,13 +98,15 @@ export const ScheduleViewScreen: React.FC<ScheduleViewScreenProps> = ({ onComple
 
       {/* Schedule List */}
       <section className="flex flex-col gap-6 relative">
-        <div className="absolute left-6 top-0 bottom-0 w-8 bg-gradient-to-b from-surface-container-low via-surface to-surface-container-low opacity-50 -z-10 rounded-full"></div>
-
         {dayBlocks.length === 0 && (
-          <div className="bg-surface-container-lowest rounded-[1rem] p-8 text-center shadow-card">
-            <span className="material-symbols-outlined text-5xl text-outline mb-3 block">event_available</span>
-            <p className="font-body text-base text-on-surface-variant">No sessions scheduled for this day.</p>
-            <p className="font-body text-sm text-outline mt-1">Generate your schedule from the home screen.</p>
+          <div className="bg-white rounded-[2.5rem] p-12 text-center shadow-card border border-outline-variant/10">
+            <div className="w-20 h-20 rounded-full bg-surface-container-low mx-auto flex items-center justify-center mb-6">
+              <span className="material-symbols-outlined text-4xl text-outline-variant icon-fill">coffee_maker</span>
+            </div>
+            <h3 className="text-xl font-headline font-bold text-on-surface mb-2">Mental Clarity Achieved</h3>
+            <p className="font-body text-base text-on-surface-variant max-w-xs mx-auto">
+              No cognitive tasks scheduled for this duration. Use this time for restorative recovery.
+            </p>
           </div>
         )}
 
@@ -112,19 +116,20 @@ export const ScheduleViewScreen: React.FC<ScheduleViewScreenProps> = ({ onComple
 
           if (block.status === 'completed') {
             return (
-              <article key={block.id} className="bg-surface-container-lowest rounded-[1rem] p-5 shadow-[0_12px_32px_rgba(53,37,205,0.03)] flex flex-col gap-4 opacity-70">
+              <article key={block.id} className="bg-surface-container-low/40 rounded-[2rem] p-6 border border-outline-variant/5 flex flex-col gap-4 opacity-60 grayscale-[0.3]">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-label text-xs text-on-surface-variant tracking-wider uppercase mb-1">
-                      {formatTime(block.startTime)} - {formatTime(block.endTime)}
-                    </p>
-                    <h3 className="font-body text-xl font-medium text-on-surface">{block.subject}</h3>
-                    {block.topic && <p className="font-body text-sm text-on-surface-variant mt-1">{block.topic}</p>}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm text-tertiary">check_circle</span>
+                      <p className="font-label text-xs text-outline tracking-wider uppercase font-bold">
+                        {formatTime(block.startTime)} — {formatTime(block.endTime)}
+                      </p>
+                    </div>
+                    <h3 className="font-headline text-xl font-bold text-on-surface">{block.subject}</h3>
                   </div>
-                  <span className="bg-surface-container px-2 py-1 rounded-sm text-xs font-label font-medium text-on-surface-variant flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">check_circle</span>
-                    Done
-                  </span>
+                  <div className="bg-white/50 px-3 py-1 rounded-full text-[10px] font-label font-bold text-tertiary uppercase tracking-widest flex items-center gap-1.5">
+                    Completed
+                  </div>
                 </div>
               </article>
             );
@@ -132,56 +137,74 @@ export const ScheduleViewScreen: React.FC<ScheduleViewScreenProps> = ({ onComple
 
           if (block.status === 'missed') {
             return (
-              <article key={block.id} className="bg-surface-container-lowest rounded-[1rem] p-5 shadow-[0_12px_32px_rgba(53,37,205,0.03)] flex flex-col gap-4">
+              <article key={block.id} className="bg-white rounded-[2rem] p-6 shadow-card border-l-4 border-error border border-outline-variant/10 flex flex-col gap-5">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-label text-xs text-on-surface-variant tracking-wider uppercase mb-1">
-                      {formatTime(block.startTime)} - {formatTime(block.endTime)}
+                    <p className="font-label text-xs text-error tracking-wider uppercase font-bold mb-1">
+                      {formatTime(block.startTime)} — {formatTime(block.endTime)}
                     </p>
-                    <h3 className="font-body text-xl font-medium text-on-surface">{block.subject}</h3>
+                    <h3 className="font-headline text-xl font-bold text-on-surface">{block.subject}</h3>
                   </div>
-                  <span className="bg-error-container text-on-error-container px-2 py-1 rounded-sm text-xs font-label font-medium flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">warning</span>
-                    Missed
-                  </span>
+                  <div className="bg-error/5 text-error px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-widest flex items-center gap-1.5">
+                    Missed session
+                  </div>
                 </div>
-                <div className="flex gap-3 mt-1">
-                  <button className="text-xs font-label font-medium text-primary hover:text-primary-container uppercase tracking-wide">
-                    Reschedule
-                  </button>
-                </div>
+                <button className="w-fit text-xs font-label font-bold text-primary hover:text-primary-variant uppercase tracking-widest flex items-center gap-2">
+                  Find new window
+                  <span className="material-symbols-outlined text-sm">trending_flat</span>
+                </button>
               </article>
             );
           }
 
-          // Pending block
+          // Pending/Next block
           return (
-            <article key={block.id} className={`bg-surface-container-lowest rounded-[1rem] p-5 shadow-card flex flex-col gap-5 relative overflow-hidden ${isNext ? 'ring-1 ring-primary/20' : ''}`}>
-              {isNext && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary"></div>}
-              <div className={`flex justify-between items-start ${isNext ? 'pl-2' : ''}`}>
-                <div>
-                  <p className={`font-label text-xs font-medium tracking-wider uppercase mb-1 ${isNext ? 'text-primary' : 'text-on-surface-variant'}`}>
-                    {formatTime(block.startTime)} - {formatTime(block.endTime)}{isNext ? ' • Next' : ''}
+            <article key={block.id} className={`group bg-white rounded-[2rem] p-8 shadow-card border border-outline-variant/10 flex flex-col gap-6 relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/20 ${isNext ? 'ring-2 ring-primary/10 bg-primary/[0.02]' : ''}`}>
+              {isNext && (
+                <div className="absolute top-0 right-0 py-2 px-6 bg-primary text-white font-label text-[10px] font-bold uppercase tracking-[0.2em] rounded-bl-2xl">
+                  Focus Priority
+                </div>
+              )}
+              
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${isNext ? 'bg-primary' : 'bg-outline-variant'}`}></div>
+                  <p className={`font-label text-xs font-bold tracking-widest uppercase ${isNext ? 'text-primary' : 'text-outline'}`}>
+                    {formatTime(block.startTime)} — {formatTime(block.endTime)}
                   </p>
-                  <h3 className="font-body text-xl font-medium text-on-surface leading-tight">{block.subject}</h3>
-                  {block.topic && <p className="font-body text-sm text-on-surface-variant mt-2">{block.topic}</p>}
-                  <p className="font-body text-xs text-outline mt-1">{duration} min • {block.type?.replace('_', ' ')}</p>
+                </div>
+                <h3 className="font-headline text-2xl font-extrabold text-on-surface leading-tight">{block.subject}</h3>
+                {block.topic && (
+                  <p className="font-body text-base text-on-surface-variant flex items-center gap-2 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/30"></span>
+                    {block.topic}
+                  </p>
+                )}
+                <div className="flex gap-4 mt-2">
+                  <div className="flex items-center gap-1.5 text-outline">
+                    <span className="material-symbols-outlined text-[18px]">timer</span>
+                    <span className="font-label text-xs font-bold">{duration}m</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-outline">
+                    <span className="material-symbols-outlined text-[18px]">psychology</span>
+                    <span className="font-label text-xs font-bold uppercase tracking-widest">{block.type?.replace('_', ' ')}</span>
+                  </div>
                 </div>
               </div>
-              <div className={`flex gap-3 mt-2 ${isNext ? 'pl-2' : ''}`}>
+
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => onComplete(block)}
-                  className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary py-3 rounded-full font-label font-medium uppercase tracking-wide text-xs transition-transform active:scale-95 shadow-cta flex items-center justify-center gap-2"
+                  className="btn-primary flex-1 py-5"
                 >
-                  <span className="material-symbols-outlined text-lg">check</span>
-                  Mark Done
+                  <span className="material-symbols-outlined text-xl">verified</span>
+                  Complete Cycle
                 </button>
                 <button
                   onClick={() => onMiss(block)}
-                  className="flex-1 bg-surface-container hover:bg-surface-container-high text-on-surface py-3 rounded-full font-label font-medium uppercase tracking-wide text-xs transition-colors flex items-center justify-center gap-2"
+                  className="btn-outline w-16 h-16 !p-0"
                 >
-                  <span className="material-symbols-outlined text-lg">close</span>
-                  Missed
+                  <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
             </article>
@@ -189,5 +212,6 @@ export const ScheduleViewScreen: React.FC<ScheduleViewScreenProps> = ({ onComple
         })}
       </section>
     </main>
+
   );
 };

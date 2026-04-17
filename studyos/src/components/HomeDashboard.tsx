@@ -6,12 +6,14 @@ interface HomeDashboardProps {
   onStartSession: (block: ScheduleBlock) => void;
   onMarkMissed: (block: ScheduleBlock) => void;
   onAddSubject: () => void;
+  onStartOnboarding?: () => void;
 }
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onStartSession,
   onMarkMissed,
   onAddSubject,
+  onStartOnboarding,
 }) => {
   const { userProfile, scheduleBlocks, completionLog, calculateMetrics, regenerateSchedule, isLoading } = useAppContext();
 
@@ -62,85 +64,145 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const activeSubjects = userProfile?.subjects.length ?? 0;
 
   return (
-    <main className="max-w-xl mx-auto px-6 pt-2 pb-32 space-y-8">
+    <main className="max-w-xl mx-auto px-6 pt-2 pb-32 space-y-8 animate-slide-up">
+      {/* Onboarding Alert for Home */}
+      {!userProfile?.subjects?.length && (
+        <section className="cta-gradient px-8 py-10 rounded-[2.5rem] text-on-primary shadow-2xl shadow-primary/25 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-20 -rotate-12 translate-x-4 -translate-y-4">
+            <span className="material-symbols-outlined text-[8rem] icon-fill">auto_awesome</span>
+          </div>
+          <div className="relative z-10 space-y-6">
+            <div className="space-y-2">
+              <h3 className="text-3xl font-headline font-black leading-tight bg-clip-text text-white">Your Sage Intelligence is dormant.</h3>
+              <p className="font-body text-on-primary/80 text-base leading-relaxed max-w-[85%]">
+                Onboarding is essential for schedule generation. Talk to Sage to initialize your cognitive profile and unlock AI-powered study sessions.
+              </p>
+            </div>
+            <button 
+              onClick={onStartOnboarding}
+              className="btn-primary"
+            >
+              Start Onboarding Now
+              <span className="material-symbols-outlined text-lg group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Welcome Area */}
-      <section className="space-y-1">
-        <h1 className="text-[2.75rem] font-headline font-extrabold tracking-tight text-on-surface leading-tight">{greeting}</h1>
-        <h2 className="text-[2.75rem] font-headline font-extrabold tracking-tight text-primary leading-tight">{userProfile?.name || '...'}</h2>
-      </section>
 
-      {/* AI Tip Card */}
-      <section className="rounded-[1rem] p-5 glass-gradient border border-outline-variant/15 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <span className="material-symbols-outlined text-6xl text-primary">auto_awesome</span>
+      <section className="flex items-end justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-label uppercase tracking-widest text-outline ml-1">{greeting}</p>
+          <h1 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface leading-tight">
+            {userProfile?.name?.split(' ')[0] || 'Explorer'}
+          </h1>
         </div>
-        <div className="flex items-start gap-4 relative z-10">
-          <div className="p-2 rounded-full bg-primary-container text-on-primary-container shrink-0 mt-1">
-            <span className="material-symbols-outlined text-sm icon-fill">lightbulb</span>
-          </div>
-          <div>
-            <h3 className="text-xs font-label uppercase tracking-wider text-primary mb-1">AI Intelligence</h3>
-            <p className="text-sm font-body text-on-surface">{aiTip}</p>
-          </div>
+        <div className="w-14 h-14 rounded-2xl bg-surface-container-high border-2 border-white flex items-center justify-center shadow-sm overflow-hidden">
+           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name || 'StudyOS'}`} alt="avatar" className="w-full h-full object-cover" />
         </div>
       </section>
 
-      {/* Bento Grid: Quick Stats */}
-      <section className="grid grid-cols-2 gap-4">
-        {/* Wide weekly progress card */}
-        <div className="col-span-2 bg-surface-container-lowest rounded-[1rem] p-5 shadow-card relative overflow-hidden">
-          <div className="flex justify-between items-end mb-4">
+      {/* AI Intelligence Card */}
+      <section className="rounded-[2rem] p-6 glass-gradient border border-primary/10 relative overflow-hidden group hover:border-primary/20 transition-all duration-500">
+        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span className="material-symbols-outlined text-7xl text-primary animate-pulse">auto_awesome</span>
+        </div>
+        <div className="flex items-start gap-5 relative z-10">
+          <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
+            <span className="material-symbols-outlined icon-fill">bolt</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xs font-label uppercase tracking-widest text-primary font-bold mb-1">Sage Intelligence</h3>
+            <p className="text-base font-body text-on-surface leading-snug">{aiTip}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Bento Grid: Performance Metrics */}
+      <section className="grid grid-cols-6 gap-4">
+        {/* Weekly Progress (4 cols) */}
+        <div className="col-span-4 bg-white rounded-[2rem] p-6 shadow-card border border-outline-variant/5 flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-xs font-label uppercase text-on-surface-variant mb-1">Weekly Progress</h3>
-              <p className="text-2xl font-headline font-semibold text-on-surface">{weeklyPct}% <span className="text-base font-body text-outline font-normal">completed</span></p>
+              <p className="text-sm font-body text-outline mb-1">Weekly Performance</p>
+              <h3 className="text-3xl font-headline font-extrabold text-on-surface">{weeklyPct}%</h3>
             </div>
-            <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center">
-              <span className="material-symbols-outlined text-secondary">trending_up</span>
+            <div className="bg-tertiary-fixed-dim/20 px-2 py-1 rounded-lg">
+               <span className="text-xs font-bold text-on-tertiary-fixed-variant">Best Pace</span>
             </div>
           </div>
-          <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
-            <div className="h-full progress-gradient rounded-full transition-all duration-700" style={{ width: `${weeklyPct}%` }}></div>
+          <div className="space-y-2">
+            <div className="w-full h-3 bg-surface-container rounded-full overflow-hidden">
+              <div className="h-full progress-gradient rounded-full transition-all duration-1000" style={{ width: `${weeklyPct}%` }}></div>
+            </div>
+            <p className="text-[10px] font-label uppercase tracking-wider text-outline text-right">Target 90% completion</p>
           </div>
         </div>
 
-        {/* Active Subjects */}
-        <div className="bg-surface-container-low rounded-[1rem] p-4 flex flex-col justify-between aspect-square">
-          <span className="material-symbols-outlined text-tertiary mb-2">library_books</span>
+        {/* Active Subjects Stat (2 cols) */}
+        <div className="col-span-2 bg-surface-container-low rounded-[2rem] p-6 border border-outline-variant/10 flex flex-col items-center justify-center gap-2">
+           <span className="text-4xl font-headline font-extrabold text-secondary">{activeSubjects}</span>
+           <p className="text-[10px] font-label uppercase tracking-tight text-outline text-center">Active<br/>Subjects</p>
+        </div>
+
+        {/* Study Hours (3 cols) */}
+        <div className="col-span-3 bg-primary/5 rounded-[2rem] p-6 border border-primary/10 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <span className="material-symbols-outlined">timer</span>
+          </div>
           <div>
-            <p className="text-[2.75rem] font-headline font-extrabold tracking-tight text-on-surface leading-none mb-1">{activeSubjects}</p>
-            <p className="text-xs font-label uppercase text-on-surface-variant">Active Subjects</p>
+             <p className="text-2xl font-headline font-extrabold text-on-surface leading-tight">{totalHours}h</p>
+             <p className="text-xs font-body text-outline">Total Time</p>
           </div>
         </div>
 
-        {/* Study Hours */}
-        <div className="bg-surface-container-low rounded-[1rem] p-4 flex flex-col justify-between aspect-square">
-          <span className="material-symbols-outlined text-primary mb-2">timer</span>
+        {/* Streak or Motivation (3 cols) */}
+        <div className="col-span-3 bg-secondary/5 rounded-[2rem] p-6 border border-secondary/10 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
+            <span className="material-symbols-outlined icon-fill">workspace_premium</span>
+          </div>
           <div>
-            <p className="text-[2.75rem] font-headline font-extrabold tracking-tight text-on-surface leading-none mb-1">{totalHours}<span className="text-xl text-outline">h</span></p>
-            <p className="text-xs font-label uppercase text-on-surface-variant">Study Hours</p>
+             <p className="text-2xl font-headline font-extrabold text-on-surface leading-tight">{Math.floor(weeklyCompleted / 2)} <span className="text-sm font-normal text-outline">pts</span></p>
+             <p className="text-xs font-body text-outline">Sage Points</p>
           </div>
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section className="flex gap-3">
+      {/* Main Actions */}
+      <section className="space-y-4">
         <button
           onClick={regenerateSchedule}
           disabled={isLoading}
-          className="flex-1 cta-gradient text-on-primary rounded-full py-4 px-6 flex items-center justify-center gap-2 font-body font-medium transition-transform active:scale-95 shadow-cta disabled:opacity-60"
+          className="btn-primary w-full py-5 text-lg"
         >
-          <span className="material-symbols-outlined text-sm">auto_awesome</span>
-          {isLoading ? 'Generating...' : 'Generate Schedule'}
+          {isLoading ? (
+             <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+          ) : (
+            <>
+              <span className="material-symbols-outlined icon-fill">auto_awesome</span>
+              Generate Daily Schedule
+            </>
+          )}
         </button>
-        <button
-          onClick={onAddSubject}
-          className="bg-surface-container-highest text-on-surface rounded-full py-4 px-6 flex items-center justify-center gap-2 font-body font-medium transition-transform active:scale-95"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>
-          Subject
-        </button>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={onAddSubject}
+            className="btn-outline"
+          >
+            <span className="material-symbols-outlined text-primary">menu_book</span>
+            Manage Syllabus
+          </button>
+          <button
+            className="btn-outline"
+          >
+            <span className="material-symbols-outlined text-secondary">analytics</span>
+            History
+          </button>
+        </div>
       </section>
+
 
       {/* Today's Plan */}
       <section className="space-y-4">
@@ -197,13 +259,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 <div className="flex gap-2">
                   <button
                     onClick={() => onMarkMissed(block)}
-                    className="flex-1 bg-surface-container py-2 rounded-full text-sm font-body font-medium text-on-surface hover:bg-surface-container-high transition-colors"
+                    className="flex-1 bg-surface-container py-2.5 rounded-full text-sm font-body font-bold text-on-surface hover:bg-surface-container-high active:scale-95 transition-all"
                   >
                     Mark Missed
                   </button>
                   <button
                     onClick={() => onStartSession(block)}
-                    className="flex-1 bg-primary text-on-primary py-2 rounded-full text-sm font-body font-medium hover:opacity-90 transition-opacity"
+                    className="flex-1 btn-primary py-2.5 rounded-full text-sm font-body font-bold"
                   >
                     Start Session
                   </button>

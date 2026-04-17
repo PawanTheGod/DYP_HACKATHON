@@ -96,136 +96,134 @@ export const SubjectManagement: React.FC<SubjectManagementProps> = ({ onClose })
   };
 
   return (
-    <div className="flex-grow w-full max-w-xl mx-auto px-6 py-6 flex flex-col gap-8 md:max-w-2xl">
-      {/* Add Subject Form */}
-      <section className="bg-surface-container-lowest rounded-DEFAULT p-6 shadow-card flex flex-col gap-6 relative overflow-hidden">
-        {/* Decorative gradient */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-secondary">
-            <span className="material-symbols-outlined icon-fill">add_circle</span>
-          </div>
-          <h2 className="font-headline text-[1.375rem] font-semibold tracking-tight text-on-surface">
-            Add Subject
-          </h2>
-        </div>
+    <div className="flex-grow w-full max-w-xl mx-auto px-6 py-10 flex flex-col gap-10 md:max-w-2xl">
+      {/* Add Subject Header */}
+      <section className="flex flex-col gap-2">
+        <h1 className="text-[3.25rem] font-headline font-extrabold tracking-tight text-on-surface leading-tight">Curate</h1>
+        <p className="font-body text-base text-on-surface-variant max-w-sm">
+          Define your cognitive domains and set the parameters for your study cycles.
+        </p>
+      </section>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {/* Add Subject Form */}
+      <section className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-card border border-outline-variant/10 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/10 transition-colors"></div>
+        
+        <form onSubmit={handleSubmit} className="flex flex-col gap-8 relative z-10">
           {/* Subject Name */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium text-on-surface-variant font-label uppercase tracking-wide">
-              Subject Name
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-bold text-outline font-label uppercase tracking-[0.2em] ml-1">
+              Subject Designation
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-surface-container-high rounded-DEFAULT px-4 py-3 text-on-surface font-body border-none outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all placeholder:text-outline"
-              placeholder="e.g. Cognitive Psychology"
+              className="w-full bg-surface-container-low/50 rounded-2xl px-6 py-5 text-lg text-on-surface font-headline font-bold border border-transparent focus:border-primary/20 focus:bg-white focus:shadow-md transition-all placeholder:text-outline/40 placeholder:font-normal"
+              placeholder="e.g. Theoretical Physics"
               required
             />
           </div>
 
-          {/* Difficulty Slider */}
-          <div className="flex flex-col gap-3">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-medium text-on-surface-variant font-label uppercase tracking-wide">
-                Difficulty Assessment
-              </label>
-              <span className="text-sm font-semibold text-secondary">
-                Level {formData.difficulty} — {getDifficultyLabel(formData.difficulty)}
-              </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Difficulty Selector */}
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-[10px] font-bold text-outline font-label uppercase tracking-[0.2em]">
+                  Cognitive Load
+                </label>
+                <span className="text-xs font-bold text-primary px-2 py-0.5 bg-primary/5 rounded-md">
+                   {getDifficultyLabel(formData.difficulty)}
+                </span>
+              </div>
+              <div className="flex flex-col gap-4 mt-2">
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  step={0.5}
+                  value={formData.difficulty / 2}
+                  onChange={(e) =>
+                    setFormData({ ...formData, difficulty: Number(e.target.value) * 2 })
+                  }
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-[9px] text-outline font-bold uppercase tracking-widest px-1">
+                  <span>Foundational</span>
+                  <span>Complex</span>
+                </div>
+              </div>
             </div>
-            <input
-              type="range"
-              min={1}
-              max={5}
-              value={formData.difficulty}
-              onChange={(e) =>
-                setFormData({ ...formData, difficulty: Number(e.target.value) * 2 })
-              }
-              className="w-full"
-            />
-            <div className="flex justify-between text-[10px] text-outline font-medium px-1">
-              <span>Intro</span>
-              <span>Complex</span>
-            </div>
-          </div>
 
-          {/* Deadline & Hours */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-on-surface-variant font-label uppercase tracking-wide">
-                Deadline
+            {/* Deadline */}
+            <div className="flex flex-col gap-4">
+              <label className="text-[10px] font-bold text-outline font-label uppercase tracking-[0.2em] ml-1">
+                Target Deadline
               </label>
               <div className="relative">
                 <input
                   type="date"
                   value={formData.deadline}
                   onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className="w-full bg-surface-container-high rounded-DEFAULT px-4 py-3 text-on-surface font-body border-none outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-surface-container-low/50 rounded-2xl px-6 py-4 text-on-surface font-label font-bold border border-transparent focus:border-primary/20 focus:bg-white transition-all appearance-none"
                   required
                 />
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-sm pointer-events-none">calendar_today</span>
               </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-on-surface-variant font-label uppercase tracking-wide">
-                Target Hours
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={formData.targetHours}
-                onChange={(e) => setFormData({ ...formData, targetHours: e.target.value })}
-                className="w-full bg-surface-container-high rounded-DEFAULT px-4 py-3 text-on-surface font-body border-none outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                placeholder="0"
-              />
             </div>
           </div>
 
           {error && (
-            <p className="text-sm text-error font-body">{error}</p>
+            <div className="p-4 rounded-xl bg-error/5 border border-error/10 flex items-center gap-3">
+               <span className="material-symbols-outlined text-error text-lg">error</span>
+               <p className="text-xs text-error font-bold tracking-wide">{error}</p>
+            </div>
           )}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 w-full bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-full py-4 px-8 font-label text-base font-medium shadow-cta hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full cta-gradient text-white rounded-[2rem] py-5 px-8 font-headline text-lg font-extrabold shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 flex items-center justify-center gap-3"
           >
-            {isSubmitting && (
-              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            {isSubmitting ? (
+              <span className="w-5 h-5 border-3 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <span className="material-symbols-outlined text-xl">temp_preferences_custom</span>
             )}
-            {isSubmitting ? 'Adding...' : 'Establish Subject'}
+            {isSubmitting ? 'Establishing...' : 'Commit to Roster'}
           </button>
         </form>
       </section>
 
       {/* Active Subjects Roster */}
-      <section className="flex flex-col gap-5">
-        <h3 className="font-headline text-[1.375rem] font-semibold text-on-surface">
-          Active Roster
-        </h3>
+      <section className="flex flex-col gap-8 pb-32">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="font-headline text-2xl font-extrabold text-on-surface">
+            Active Domains
+          </h3>
+          {userProfile && userProfile.subjects.length > 0 && (
+            <span className="text-[10px] font-bold text-outline font-label uppercase tracking-widest bg-surface-container px-3 py-1 rounded-full">
+               {userProfile.subjects.length} Enrolled
+            </span>
+          )}
+        </div>
+        
         {!userProfile || userProfile.subjects.length === 0 ? (
-          /* Empty State */
-          <div className="bg-surface-container-low rounded-DEFAULT p-8 flex flex-col items-center text-center space-y-6">
-            <div className="w-24 h-24 rounded-full bg-primary-fixed flex items-center justify-center">
-              <span
-                className="material-symbols-outlined text-5xl text-primary icon-fill"
-              >
-                menu_book
-              </span>
+          <div className="bg-surface-container-low/50 rounded-[3rem] p-16 flex flex-col items-center text-center border-2 border-dashed border-outline-variant/20">
+            <div className="w-24 h-24 rounded-[2rem] bg-white shadow-xl flex items-center justify-center mb-10 rotate-3">
+              <span className="material-symbols-outlined text-5xl text-primary/40">auto_stories</span>
             </div>
-            <div className="space-y-2">
-              <h2 className="font-headline text-[1.75rem] font-semibold text-on-surface">
-                Your Canvas is Clear
+            <div className="space-y-4">
+              <h2 className="font-headline text-2xl font-extrabold text-on-surface">
+                Awaiting Designation
               </h2>
               <p className="font-body text-base text-on-surface-variant leading-relaxed max-w-sm mx-auto">
-                Begin your cognitive journey by adding subjects you wish to master. We'll handle the curation.
+                No active domains detected. Define your subjects above to initialize neural mapping.
               </p>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-6">
             {userProfile.subjects.map((subject) => (
               <SubjectCard
                 key={subject.id}
@@ -239,6 +237,7 @@ export const SubjectManagement: React.FC<SubjectManagementProps> = ({ onClose })
         )}
       </section>
     </div>
+
   );
 };
 
@@ -265,43 +264,54 @@ const SubjectCard: React.FC<SubjectCardProps> = ({
   };
 
   return (
-    <div className="bg-surface-container-lowest rounded-DEFAULT p-5 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow relative group">
-      <div className="flex justify-between items-start">
-        <div className="flex flex-col gap-1">
-          <h4 className="font-body text-[1.125rem] font-semibold text-on-surface">
+    <div className="bg-white rounded-[2rem] p-6 flex flex-col gap-6 shadow-card border border-outline-variant/10 relative group overflow-hidden transition-all hover:shadow-lg hover:border-primary/20">
+      {/* Subject Color Indicator */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors"></div>
+      
+      <div className="flex justify-between items-start relative z-10">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: subject.color }}></span>
+            <span className="text-[10px] font-bold text-outline font-label uppercase tracking-widest">
+              {getDifficultyText(subject.difficulty)}
+            </span>
+          </div>
+          <h4 className="font-headline text-2xl font-extrabold text-on-surface">
             {subject.name}
           </h4>
-          <span
-            className={`text-xs font-medium px-2 py-1 rounded-sm w-fit ${getDifficultyChip(
-              subject.difficulty
-            )}`}
-          >
-            {getDifficultyText(subject.difficulty)}
-          </span>
         </div>
         <button
           onClick={onDelete}
-          className="text-outline hover:text-error transition-colors rounded-full p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
+          className="w-10 h-10 rounded-full bg-surface-container-low text-outline-variant flex items-center justify-center hover:bg-error/10 hover:text-error transition-all"
         >
-          <span className="material-symbols-outlined text-[20px]">delete</span>
+          <span className="material-symbols-outlined text-lg">delete</span>
         </button>
       </div>
-      <div className="flex items-center gap-4 text-sm text-on-surface-variant bg-surface-container-low p-3 rounded-DEFAULT">
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[18px] text-primary">event</span>
-          <span className="font-medium">{formatDeadline(subject.deadline)}</span>
+
+      <div className="grid grid-cols-2 gap-3 relative z-10">
+        <div className="bg-surface-container-low/50 p-4 rounded-2xl flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+            <span className="material-symbols-outlined text-primary text-sm">calendar_month</span>
+          </div>
+          <div className="flex flex-col">
+             <span className="text-[9px] font-bold text-outline uppercase tracking-widest">Deadline</span>
+             <span className="text-xs font-bold text-on-surface">{formatDeadline(subject.deadline)}</span>
+          </div>
         </div>
-        <div className="w-px h-4 bg-outline-variant/30" />
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[18px] text-tertiary">
-            bar_chart
-          </span>
-          <span className="font-medium">Mastery {subject.masteryScore}%</span>
+        <div className="bg-surface-container-low/50 p-4 rounded-2xl flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+             <span className="material-symbols-outlined text-secondary text-sm">auto_graph</span>
+          </div>
+          <div className="flex flex-col">
+             <span className="text-[9px] font-bold text-outline uppercase tracking-widest">Mastery</span>
+             <span className="text-xs font-bold text-on-surface">{subject.masteryScore}%</span>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
 
 const SUBJECT_COLORS = [
   '#3525cd', '#712ae2', '#005338', '#ba1a1a',
