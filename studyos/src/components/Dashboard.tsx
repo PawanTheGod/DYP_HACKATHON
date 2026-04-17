@@ -12,6 +12,7 @@ import { SessionActiveView } from './SessionActiveView';
 import { ScheduleBlock } from '../types';
 
 import { WelcomeScreen } from './WelcomeScreen';
+import { SettingsScreen } from './SettingsScreen';
 
 type Tab = 'home' | 'schedule' | 'analytics' | 'insights';
 
@@ -119,16 +120,17 @@ export const Dashboard: React.FC = () => {
         {/* If settings visible, show a simple overlay */}
 
         {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/40 backdrop-blur-md" onClick={() => setShowSettings(false)}>
-            <div className="bg-surface-container-lowest rounded-[2rem] p-8 w-full max-w-sm shadow-modal animate-scale-in" onClick={e => e.stopPropagation()}>
-              <h2 className="font-headline text-xl font-semibold text-on-surface mb-4">Settings</h2>
-              <p className="font-body text-sm text-on-surface-variant">Settings panel coming soon.</p>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="mt-6 w-full cta-gradient text-on-primary py-3 rounded-full font-body font-medium"
-              >
-                Close
-              </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowSettings(false)}>
+            <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors z-10"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+                <SettingsScreen />
+              </div>
             </div>
           </div>
         )}

@@ -22,7 +22,11 @@ const groq = new Groq({
  * We use Mixtral or Llama-3 depending on what qrok has available, 
  * but standard qrok models are available via 'llama3-70b-8192' typically.
  */
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+/**
+ * We switch to 'llama-3.1-8b-instant' for onboarding because it is much faster
+ * and has significantly higher rate limits than the 70B models, preventing 429 errors.
+ */
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 
 /**
  * Standard utility to run Groq API requests with robust retry logic.
@@ -45,8 +49,9 @@ async function callGroqWithRetry(messages: any[], maxRetries = 3): Promise<strin
       if (attempt >= maxRetries) {
         throw new Error('Groq API failed after multiple retries.');
       }
-      // Brief backoff before retry (e.g. 1000ms)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Use exponential backoff (2s, 4s, etc.) to respect rate limits
+      const backoff = attempt * 2000;
+      await new Promise((resolve) => setTimeout(resolve, backoff));
     }
   }
   return '';

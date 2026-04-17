@@ -1,5 +1,6 @@
 import React from 'react';
 import { LucideArrowRight, LucideBookOpen, LucideCalendar, LucideZap, LucideShieldCheck } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -8,6 +9,14 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, isLoggedIn }) => {
+  const { skipToDemo } = useAppContext();
+
+  const handleDemoSkip = async () => {
+    if (confirm("Proceding with mock values? This will jump you straight to the dashboard.")) {
+      await skipToDemo();
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-surface selection:bg-primary/20">
       {/* Navigation */}
@@ -20,6 +29,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin,
         </div>
         <div className="flex items-center gap-4">
           <button 
+            onClick={handleDemoSkip}
+            className="hidden sm:block px-4 py-2 text-slate-500 font-medium hover:text-primary transition-colors text-sm"
+          >
+            Try Demo
+          </button>
+          <button
             onClick={isLoggedIn ? onGetStarted : onLogin}
             className="px-5 py-2 text-primary font-semibold hover:bg-primary/5 rounded-full transition-all"
           >

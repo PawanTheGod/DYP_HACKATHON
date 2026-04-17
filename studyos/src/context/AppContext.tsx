@@ -32,6 +32,7 @@ import {
 
 import {
   addCompletionLogEntry,
+  clearAllData,
   getCompletionLog,
   getScheduleBlocks,
   getUserProfile,
@@ -143,6 +144,8 @@ interface AppContextType {
   calculateMetrics: () => MetricsData;
   refreshAllData: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
+  logout: () => Promise<void>;
+  skipToDemo: () => Promise<void>;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -394,6 +397,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  /** Clears all data and reloads the app. */
+  const logout = useCallback(async () => {
+    try {
+      await clearAllData();
+      // Force reload to completely reset the app state and go back to landing
+      window.location.reload();
+    } catch (err) {
+      console.error('[AppContext] logout failed:', err);
+      throw err;
+    }
+  }, []);
+
+  /** Injects mock data and jumps to dashboard. Useful for demo/testing. */
+  const skipToDemo = useCallback(async () => {
+    try {
+      const mockProfile: UserProfile = {
+        userId: crypto.randomUUID(),
+        name: 'Experimental Student',
+        motivation: 'To crush my exams and master complex topics through disciplined study.',
+        energyPeak: 'morning',
+        subjects: [
+          {
+            id: crypto.randomUUID(),
+            name: 'Mathematics',
+            difficulty: 8,
+            deadline: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+            currentLevel: 4,
+            color: '#EF4444',
+            masteryScore: 0,
+            priorityScore: 0,
+            topics: []
+          },
+          {
+            id: crypto.randomUUID(),
+            name: 'Physics',
+            difficulty: 7,
+            deadline: new Date(Date.now() + 45 * 86400000).toISOString().split('T')[0],
+            currentLevel: 5,
+            color: '#8B5CF6',
+            masteryScore: 0,
+            priorityScore: 0,
+            topics: []
+          },
+          {
+            id: crypto.randomUUID(),
+            name: 'Computer Science',
+            difficulty: 6,
+            deadline: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+            currentLevel: 7,
+            color: '#3B82F6',
+            masteryScore: 0,
+            priorityScore: 0,
+            topics: []
+          }
+        ],
+        constraints: {
+          sleepBy: '23:00',
+          wakeAt: '07:00',
+          blockedSlots: [],
+          breakDays: ['Sunday']
+        },
+        availableHours: { weekday: 4, weekend: 8 },
+        createdAt: new Date().toISOString()
+      };
+
+      await persistUserProfile(mockProfile);
+      await setOnboardingComplete(true);
+      window.location.reload();
+    } catch (err) {
+      console.error('[AppContext] skipToDemo failed:', err);
+      throw err;
+    }
+  }, []);
+
   // ── Derived Metrics (Memoized) ─────────────────────────────────────────────
 
   /**
@@ -483,6 +560,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     calculateMetrics,
     refreshAllData,
     completeOnboarding,
+    logout,
+    skipToDemo,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

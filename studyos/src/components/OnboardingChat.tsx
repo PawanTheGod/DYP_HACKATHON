@@ -5,7 +5,7 @@ import { ChatMessage, UserProfile } from '../types';
 import { setOnboardingComplete } from '../lib/dataStore';
 
 export const OnboardingChat: React.FC = () => {
-  const { setUserProfile, regenerateSchedule } = useAppContext();
+  const { setUserProfile, skipToDemo } = useAppContext();
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -60,20 +60,8 @@ export const OnboardingChat: React.FC = () => {
 
       if (isSummaryReady) {
         setFinalizing(true);
-        const extractedJson = await parseOnboardingChat(updatedHistory);
+        const profile = await parseOnboardingChat(updatedHistory);
         
-        // Convert to our UserProfile format safely
-        const profile: UserProfile = {
-          userId: crypto.randomUUID(),
-          name: extractedJson.name || 'Student',
-          motivation: extractedJson.motivation || 'I want to excel in my studies.',
-          energyPeak: extractedJson.energyPeak || 'morning',
-          subjects: extractedJson.subjects || [],
-          constraints: extractedJson.constraints || { sleepBy: "23:00", wakeAt: "07:00", blockedSlots: [], breakDays: [] },
-          availableHours: extractedJson.availableHours || { weekday: 4, weekend: 6 },
-          createdAt: new Date().toISOString()
-        };
-
         await setUserProfile(profile);
         await setOnboardingComplete(true);
         window.location.reload(); // Refresh to trigger dashboard entry
@@ -84,6 +72,16 @@ export const OnboardingChat: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSkipToDashboard = async () => {
+    const confirmSkip = window.confirm("Proceding with mock values? This will bypass the onboarding chat.");
+    if (!confirmSkip) return;
+
+    setFinalizing(true);
+    // Simulate some "AI" processing time for flavor
+    await new Promise(r => setTimeout(r, 1000));
+    await skipToDemo();
   };
 
   const toggleRecording = () => {
@@ -137,10 +135,16 @@ export const OnboardingChat: React.FC = () => {
         <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <span className="material-symbols-outlined icon-fill">robot_2</span>
         </div>
-        <div>
-            <h2 className="font-headline font-semibold text-on-surface">Sage Interface</h2>
-            <p className="text-xs font-body text-outline uppercase tracking-widest leading-none mt-0.5">Onboarding Assistant</p>
+        <div className="flex-1">
+            <h2 className="font-headline font-semibold text-on-surface leading-tight">Sage Interface</h2>
+            <p className="text-[10px] font-body text-outline uppercase tracking-widest leading-none mt-0.5">Onboarding Assistant</p>
         </div>
+        <button
+          onClick={handleSkipToDashboard}
+          className="px-4 py-2 rounded-xl bg-surface-container-highest text-on-surface-variant font-headline text-[10px] font-bold uppercase tracking-widest hover:bg-on-surface hover:text-surface transition-all active:scale-95 shadow-sm"
+        >
+          Skip to Dashboard
+        </button>
       </div>
 
       {/* Message List */}
