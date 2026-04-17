@@ -227,7 +227,6 @@ Constraints to enforce:
     // "Auto-save to Firebase under key..."
     // Since Firebase data fetching / saving will be handled at the DataStore layer (Task 3.1)
     // We'll log saving behavior to signify completion for this subsystem tier.
-    const todayStr = new Date().toISOString().split('T')[0];
     const firebaseKey = 'schedule_blocks_' + todayStr;
     console.info(`[Info] In production, this output will be saved to Firebase path: ${firebaseKey}`);
 
