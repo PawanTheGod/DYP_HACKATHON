@@ -25,7 +25,7 @@ export interface SubjectObject {
   color: string; // #hexcode
   masteryScore: number; // 0-100
   priorityScore: number;
-  topics?: string[];
+  topics: string[];
 }
 
 // SCHEDULE

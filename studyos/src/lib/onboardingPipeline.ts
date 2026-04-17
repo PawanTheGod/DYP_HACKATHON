@@ -78,7 +78,7 @@ export async function processOnboardingTurn(
       nextMessage: {
         id: crypto.randomUUID(),
         role: 'sage',
-        content: "Hi! I'm Sage, your study partner. Let me understand your situation so I can build you the perfect schedule. What subjects are you preparing for right now? Be specific — tell me the names and how many you have.",
+        content: "Hi! I'm Sage, your study partner. Let me understand your situation so I can build you the perfect schedule. What subjects are you preparing for right now? Be specific - tell me the names and how many you have.",
         timestamp: new Date().toISOString(),
       },
       isSummaryReady: false,

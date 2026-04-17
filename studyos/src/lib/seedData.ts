@@ -45,6 +45,7 @@ const mockProfile: UserProfile = {
       color: '#6366f1',
       masteryScore: 42,
       priorityScore: 90,
+      topics: [],
     },
     {
       id: 'subj_math',
@@ -55,6 +56,7 @@ const mockProfile: UserProfile = {
       color: '#f59e0b',
       masteryScore: 55,
       priorityScore: 85,
+      topics: [],
     },
     {
       id: 'subj_chem',
@@ -65,6 +67,7 @@ const mockProfile: UserProfile = {
       color: '#10b981',
       masteryScore: 30,
       priorityScore: 75,
+      topics: [],
     },
   ],
   constraints: {

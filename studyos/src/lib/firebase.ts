@@ -7,21 +7,22 @@
  * Gracefully degrades to localStorage if config env vars are missing.
  */
 
-import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
+import type { FirebaseApp } from 'firebase/app';
 import {
   initializeFirestore,
-  Firestore,
   persistentLocalCache,
   persistentMultipleTabManager,
 } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 import {
   getAuth,
-  Auth,
   signInAnonymously,
   onAuthStateChanged,
-  User,
 } from 'firebase/auth';
-import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
+import type { Auth, User } from 'firebase/auth';
+import { getAnalytics, isSupported } from 'firebase/analytics';
+import type { Analytics } from 'firebase/analytics';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -39,10 +40,10 @@ const REQUIRED_KEYS: (keyof typeof firebaseConfig)[] = ['apiKey', 'projectId', '
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let _app:           FirebaseApp | null = null;
-let _db:            Firestore   | null = null;
-let _auth:          Auth        | null = null;
-let _analytics:     Analytics   | null = null;
+let _app:           any = null;
+let _db:            any = null;
+let _auth:          any = null;
+let _analytics:     any = null;
 let _currentUserId: string      | null = null;
 let _firebaseReady                     = false;
 
@@ -109,7 +110,7 @@ export async function initializeFirebase(): Promise<boolean> {
     await new Promise<void>((resolve, reject) => {
       const unsubscribe = onAuthStateChanged(
         _auth!,
-        (user: User | null) => {
+        (user: any) => {
           unsubscribe();
           if (user) {
             _currentUserId = user.uid;
@@ -118,7 +119,7 @@ export async function initializeFirebase(): Promise<boolean> {
             resolve();
           } else {
             signInAnonymously(_auth!)
-              .then((cred) => {
+              .then((cred: any) => {
                 _currentUserId = cred.user.uid;
                 _firebaseReady  = true;
                 console.log(`[firebase] Signed in anonymously: ${cred.user.uid}`);
@@ -155,8 +156,8 @@ export async function initializeFirebase(): Promise<boolean> {
 
 // ─── Accessors ────────────────────────────────────────────────────────────────
 
-export function getDb(): Firestore | null         { return _db; }
-export function getAuthInstance(): Auth | null    { return _auth; }
-export function getAnalyticsInstance(): Analytics | null { return _analytics; }
+export function getDb(): any         { return _db; }
+export function getAuthInstance(): any    { return _auth; }
+export function getAnalyticsInstance(): any { return _analytics; }
 export function getCurrentUserId(): string | null { return _currentUserId; }
 export function isFirebaseReady(): boolean        { return _firebaseReady; }

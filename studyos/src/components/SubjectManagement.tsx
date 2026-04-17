@@ -44,6 +44,7 @@ export const SubjectManagement: React.FC<SubjectManagementProps> = ({ onClose })
         color: SUBJECT_COLORS[userProfile.subjects.length % SUBJECT_COLORS.length],
         masteryScore: 0,
         priorityScore: 0,
+        topics: [],
       };
       const updatedProfile = {
         ...userProfile,
