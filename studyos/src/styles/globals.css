@@ -100,11 +100,16 @@ h1, h2, h3, h4, h5, h6, .font-headline {
   }
   
   .btn-outline {
-    @apply bg-white border border-neutral-200 text-on-surface font-headline font-bold py-4 px-8 rounded-2xl transition-all active:scale-[0.98] hover:bg-neutral-50 flex items-center justify-center gap-2;
+    color: var(--color-on-surface);
+    @apply bg-white border border-neutral-200 font-headline font-bold py-4 px-8 rounded-2xl transition-all active:scale-[0.98] hover:bg-neutral-50 flex items-center justify-center gap-2;
   }
 
   .btn-ghost {
-    @apply bg-transparent text-on-surface-variant font-headline font-bold py-4 px-8 rounded-2xl transition-all hover:bg-surface-container active:scale-[0.98] flex items-center justify-center gap-2;
+    color: var(--color-on-surface-variant);
+    @apply bg-transparent font-headline font-bold py-4 px-8 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2;
+    &:hover {
+      background-color: var(--color-surface-container);
+    }
   }
 }
 
