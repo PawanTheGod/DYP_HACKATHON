@@ -159,8 +159,10 @@ export async function generateSchedule(userProfile: UserProfile, daysAhead: numb
 
   const systemPrompt = generateSagePrompt(userProfile, 'schedule_gen');
   
+  const todayStr = new Date().toISOString().split('T')[0];
   const instructionBlock = `
-Generate a ${daysAhead}-day study schedule. Return ONLY a valid JSON array of ScheduleBlock objects. No explanations, no markdown.
+Generate a ${daysAhead}-day study schedule starting exactly from today (${todayStr}). Output dates must use YYYY-MM-DD format starting from ${todayStr}.
+Return ONLY a valid JSON array of ScheduleBlock objects. No explanations, no markdown.
 
 Priority Scores for subjects: ${JSON.stringify(priorityScores)}
 User Profile Constraints: ${JSON.stringify(userProfile.constraints)}

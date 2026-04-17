@@ -230,7 +230,7 @@ CONVERSATION RULES:
 - After each response, acknowledge what they said and ask a natural follow-up.
 - If they say "I don't know" for difficulty or hours, suggest reasonable defaults.
 - After gathering all data, summarize what you've collected and ask for confirmation.
-- Do NOT generate JSON in this phase. Just have a natural conversation.`,
+- OVERRIDE RULE 1: Under NO circumstances should you output JSON during this phase. If the user asks for a schedule, just say you have gathered everything and are ready to create it for them. DO NOT GENERATE JSON YOURSELF.`,
 
   cascade_reschedule: `
 CASCADE RESCHEDULING INSTRUCTIONS:

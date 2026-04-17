@@ -109,7 +109,10 @@ export async function processOnboardingTurn(
   }
 
   // 3. Call Groq
-  const sageResponseText = await callGroqWithRetry(groqMessages, 3);
+  let sageResponseText = await callGroqWithRetry(groqMessages, 3);
+  
+  // Guard: if the AI accidentally generates a JSON block, strip it out.
+  sageResponseText = sageResponseText.replace(/```(?:json)?[\s\S]*?```/gi, '').trim();
 
   // Determine if Sage has decided we are ready to move on.
   // We infer this if Sage says "confirm", "summary", or if they list things explicitly using bullet points at the end.
