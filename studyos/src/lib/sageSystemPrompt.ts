@@ -26,6 +26,7 @@ export type ContextType =
   | 'verification'      // Phase 3 — proof & quiz verification
   | 'emergency'         // Feature 8.5 — "I Need Help" mode
   | 'onboarding'        // Phase 1 — AI onboarding conversation
+  | 'analytics_insights' // Phase 5 — behavioral analysis & study tips
   | 'cascade_reschedule'; // Phase 4 — missed-session redistribution
 
 // ---------------------------------------------------------------------------
@@ -243,6 +244,16 @@ A study session was missed and the schedule needs redistribution. Follow these r
 - In recovery mode, switch all blocks to type "revision" or "break" — no new content.
 - Ensure no time overlaps with existing blocks.
 - Maintain the same ScheduleBlock schema as schedule_gen.`,
+
+  analytics_insights: `
+ANALYTICS INSIGHTS INSTRUCTIONS:
+You are analyzing the student's study behavior. Based on their completion data and schedule, provide:
+1. A summary of their recent focus (1-2 sentences).
+2. One specific, practical "Smart Tip" for improvement.
+3. A brief encouragement based on their motivation ({{motivation}}).
+
+Return ONLY a JSON object: { "summary": string, "smartTip": string, "encouragement": string }
+Keep it concise and in Sage's warm, witty tone.`,
 };
 
 // ---------------------------------------------------------------------------

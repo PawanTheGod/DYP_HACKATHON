@@ -1,8 +1,28 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { generateAIInsights, BehavioralInsights } from '../lib/insightsGenerator';
 
 export const AIInsightsScreen: React.FC = () => {
-  const { userProfile, scheduleBlocks } = useAppContext();
+  const { userProfile, scheduleBlocks, completionLog } = useAppContext();
+  
+  const [isAnalyzing, setIsAnalyzing] = useState(true);
+  const [insights, setInsights] = useState<BehavioralInsights | null>(null);
+
+  useEffect(() => {
+    async function fetchInsights() {
+      if (!userProfile) return;
+      setIsAnalyzing(true);
+      try {
+        const result = await generateAIInsights(userProfile, scheduleBlocks, completionLog);
+        setInsights(result);
+      } catch (err) {
+        console.error('Insights error:', err);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }
+    fetchInsights();
+  }, [userProfile, scheduleBlocks.length, completionLog.length]);
 
   // Find peak productivity window based on energyPeak
   const peakTime = useMemo(() => {
@@ -36,21 +56,44 @@ export const AIInsightsScreen: React.FC = () => {
         </p>
       </div>
 
-      {/* AI Analyzing State */}
-      <section className="bg-surface-container-low rounded-[1rem] p-6 relative overflow-hidden group">
+      {/* AI Analyzing / Insights Card */}
+      <section className="bg-surface-container-low rounded-[1rem] p-6 relative overflow-hidden group min-h-[160px] flex items-center">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-50"></div>
-        <div className="relative z-10 flex flex-col gap-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container animate-pulse">
-              <span className="material-symbols-outlined text-sm">auto_awesome</span>
+        <div className="relative z-10 flex flex-col gap-4 w-full">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isAnalyzing ? 'bg-primary-container text-on-primary-container animate-pulse' : 'bg-primary text-on-primary'}`}>
+              <span className="material-symbols-outlined text-sm">{isAnalyzing ? 'auto_awesome' : 'info'}</span>
             </div>
-            <h3 className="font-body text-xl font-medium text-on-surface">AI is analyzing your study behavior...</h3>
+            <h3 className="font-body text-xl font-medium text-on-surface">
+              {isAnalyzing ? 'AI is analyzing your study behavior...' : 'Sage\'s Cognitive Analysis'}
+            </h3>
           </div>
-          <div className="space-y-3 mt-2">
-            <div className="h-4 rounded bg-surface-container-highest w-3/4 ai-shimmer"></div>
-            <div className="h-4 rounded bg-surface-container-highest w-full ai-shimmer"></div>
-            <div className="h-4 rounded bg-surface-container-highest w-5/6 ai-shimmer"></div>
-          </div>
+          
+          {isAnalyzing ? (
+            <div className="space-y-3 mt-2">
+              <div className="h-4 rounded bg-surface-container-highest w-3/4 ai-shimmer"></div>
+              <div className="h-4 rounded bg-surface-container-highest w-full ai-shimmer"></div>
+              <div className="h-4 rounded bg-surface-container-highest w-5/6 ai-shimmer"></div>
+            </div>
+          ) : (
+            <div className="animate-fade-in space-y-4">
+              <p className="font-body text-sm text-on-surface leading-relaxed italic">
+                &ldquo;{insights?.summary}&rdquo;
+              </p>
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                <div className="flex items-center gap-2 mb-1">
+                   <span className="material-symbols-outlined text-primary text-xs">tips_and_updates</span>
+                   <span className="font-label text-[10px] font-bold uppercase tracking-widest text-primary">Pro Tip</span>
+                </div>
+                <p className="font-body text-xs text-on-surface-variant leading-relaxed">
+                  {insights?.smartTip}
+                </p>
+              </div>
+              <p className="font-body text-[10px] uppercase tracking-tighter text-outline-variant font-bold text-center">
+                {insights?.encouragement}
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
