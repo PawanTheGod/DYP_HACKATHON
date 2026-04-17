@@ -9,11 +9,12 @@
 import Groq from 'groq-sdk';
 import { generateSagePrompt } from './sageSystemPrompt';
 import type { ChatMessage, UserProfile } from '../types';
+import { ENV } from '../config/env';
 
 // Initialize Groq SDK
-// Note: dangerouslyAllowBrowser is required when running directly in a React/Vite web app
+// Note: dangerouslyAllowBrowser is required when running directly in a React/Vite web or Expo app
 const groq = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY,
+  apiKey: ENV.GROQ_API_KEY,
   dangerouslyAllowBrowser: true,
 });
 

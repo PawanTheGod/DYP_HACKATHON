@@ -9,17 +9,17 @@
 import Groq from 'groq-sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generateSagePrompt } from './sageSystemPrompt';
+import { ENV } from '../config/env';
 
 // --- Initialize Groq for Text Verification (Quizzes) ---
 const groq = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY,
+  apiKey: ENV.GROQ_API_KEY,
   dangerouslyAllowBrowser: true,
 });
 const GROQ_MODEL = 'llama3-70b-8192';
 
 // --- Initialize Gemini for Vision Verification (Photos) ---
-// Fallback to empty string for TS checking; the API key is injected via Vite env variables.
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(ENV.GEMINI_API_KEY || '');
 const GEMINI_VISION_MODEL = 'gemini-2.5-flash';
 
 export interface QuizQuestion {

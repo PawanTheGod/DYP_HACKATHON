@@ -8,9 +8,10 @@
 import Groq from 'groq-sdk';
 import { generateSagePrompt } from './sageSystemPrompt';
 import type { UserProfile, ScheduleBlock } from '../types';
+import { ENV } from '../config/env';
 
 const groq = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY,
+  apiKey: ENV.GROQ_API_KEY,
   dangerouslyAllowBrowser: true,
 });
 
