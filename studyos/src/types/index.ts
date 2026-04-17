@@ -41,6 +41,7 @@ export interface ScheduleBlock {
   proofVerified: boolean;
   quizScore: number | null;
   notes: string;
+  missedReason?: string | null;
   resourceLink: string | null;
 }
 
@@ -118,7 +119,27 @@ export interface MetricsData {
   readinessBySubject: Record<string, number>;
 }
 
-export * from './user';
-export * from './schedule';
-export * from './chat';
-export * from './completion';
+// QUIZ & VERIFICATION
+export interface QuizQuestion {
+  question: string;
+  options: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correctAnswerKey: 'A' | 'B' | 'C' | 'D';
+  explanation: string;
+}
+
+export interface VerificationResult {
+  verified: boolean;
+  confidence: number;
+  feedback: string;
+}
+
+export interface QuizGradeResult {
+  score: number;
+  feedback: string;
+  incorrectExplanations: string[];
+}

@@ -139,7 +139,7 @@ interface AppContextType {
     proofType: 'photo' | 'quiz' | 'voice' | 'none',
     score?: number
   ) => Promise<void>;
-  markSessionMissed: (blockId: string) => Promise<void>;
+  markSessionMissed: (blockId: string, reason?: string) => Promise<void>;
   calculateMetrics: () => MetricsData;
   refreshAllData: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
@@ -324,35 +324,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * Marks a block as missed and triggers Person 1's cascade rescheduler.
    * The cascade rescheduler call is non-fatal (stub-safe).
    */
-  const markSessionMissed = useCallback(async (blockId: string) => {
+  const markSessionMissed = useCallback(async (blockId: string, reason?: string) => {
     const snapshot = stateRef.current;
-    dispatch({ type: 'UPDATE_BLOCK', payload: { blockId, updates: { status: 'missed' } } });
+    
+    const updates: Partial<ScheduleBlock> = { 
+      status: 'missed',
+      missedReason: reason || null
+    };
+
+    dispatch({ type: 'UPDATE_BLOCK', payload: { blockId, updates } });
 
     try {
-      await persistUpdateBlock(blockId, { status: 'missed' });
+      await persistUpdateBlock(blockId, updates);
 
       // Non-fatal: cascade rescheduler may not be implemented by Person 1 yet
       try {
         const cascadeModule = await import('@lib/cascadeRescheduler');
         const currentBlocks = await getScheduleBlocks();
         const currentProfile = stateRef.current.userProfile;
-        const rescheduleFn = (
-          cascadeModule as Record<string, unknown>
-        )['rescheduleAfterMiss'] as
-          | ((
-              id: string,
-              blocks: ScheduleBlock[],
-              profile: UserProfile
-            ) => Promise<ScheduleBlock[]>)
-          | undefined;
+        
+        // Correctly typed helper to handle the RescheduleResult wrapper
+        const rescheduleFn = (cascadeModule as any).rescheduleAfterMiss;
 
         if (rescheduleFn && currentProfile) {
-          const newBlocks = await rescheduleFn(blockId, currentBlocks, currentProfile);
-          await persistUpdateBlocks(newBlocks);
-          dispatch({ type: 'SET_SCHEDULE', payload: newBlocks });
+          const result = await rescheduleFn(blockId, currentBlocks, currentProfile);
+          
+          // Bug Fix: result is a RescheduleResult { updatedSchedule, burnoutMessage, ... }
+          // We need the updatedSchedule array for storage and state.
+          const newBlocks = result?.updatedSchedule || result; 
+
+          if (Array.isArray(newBlocks)) {
+            await persistUpdateBlocks(newBlocks);
+            dispatch({ type: 'SET_SCHEDULE', payload: newBlocks });
+            
+            if (result?.burnoutMessage) {
+              console.info('[Sage Burnout Analysis]:', result.burnoutMessage);
+              // In a future feature we might want to toast this.
+            }
+          }
         }
       } catch (cascadeErr) {
-        console.warn('[AppContext] cascadeRescheduler not available (Person 1 stub):', cascadeErr);
+        console.warn('[AppContext] cascadeRescheduler error:', cascadeErr);
       }
     } catch (err) {
       dispatch({ type: 'RESTORE_STATE', payload: snapshot });
