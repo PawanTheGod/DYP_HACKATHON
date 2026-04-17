@@ -9,7 +9,23 @@
 
 import { ScheduleBlock, CompletionLogEntry } from '@/types';
 
-// ─── Date Calculations ────────────────────────────────────────────────────────
+// ─── Time Primitives (Components MUST use these — never call new Date() directly) ─
+
+/**
+ * Returns the current Date. Use instead of `new Date()` in all modules.
+ * Centralised here so it can be mocked deterministically in tests.
+ */
+export function getNow(): Date {
+  return new Date();
+}
+
+/**
+ * Returns today's date as a YYYY-MM-DD string (local timezone).
+ * Use instead of `toDateString(new Date())` in all modules.
+ */
+export function getToday(): string {
+  return toDateString(new Date());
+}
 
 /**
  * Returns how many full calendar days remain until a YYYY-MM-DD deadline.

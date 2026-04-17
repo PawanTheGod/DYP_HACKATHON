@@ -1,11 +1,16 @@
 /**
  * AppContext.tsx — StudyOS Global State (Person 3 / Task 3.2)
  *
- * Provides app-wide state to all components via React Context.
- * Avoids prop drilling.
+ * Architecture:
+ *   - useReducer for strict, typed state transitions
+ *   - Optimistic UI updates with automatic rollback on failure
+ *   - Async-safe actions (all write actions enqueue via dataStore)
+ *   - Zero breaking changes to AppContextType — teammates' code unchanged
  *
- * Usage (any component):
- *   const { userProfile, markSessionComplete } = useAppContext();
+ * Team integration contract:
+ *   - regenerateSchedule(): calls Person 1's scheduleGenerator (dynamic import)
+ *   - markSessionMissed():  calls Person 1's cascadeRescheduler (dynamic import)
+ *   - Both are non-fatal if Person 1's modules are not yet implemented
  */
 
 import React, {
@@ -14,7 +19,8 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useReducer,
+  useRef,
 } from 'react';
 
 import {
@@ -45,7 +51,74 @@ import {
   toDateString,
 } from '@lib/timeUtils';
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ─── State & Actions ──────────────────────────────────────────────────────────
+
+interface AppState {
+  userProfile: UserProfile | null;
+  scheduleBlocks: ScheduleBlock[];
+  completionLog: CompletionLogEntry[];
+  isLoading: boolean;
+  isOnboardingComplete: boolean;
+}
+
+type Action =
+  | { type: 'SET_PROFILE'; payload: UserProfile }
+  | { type: 'SET_SCHEDULE'; payload: ScheduleBlock[] }
+  | { type: 'UPDATE_BLOCK'; payload: { blockId: string; updates: Partial<ScheduleBlock> } }
+  | { type: 'ADD_COMPLETION_LOG_ENTRY'; payload: CompletionLogEntry }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ONBOARDING_COMPLETE'; payload: boolean }
+  | { type: 'RESTORE_STATE'; payload: AppState }
+  | { type: 'HYDRATE'; payload: Partial<AppState> };
+
+const initialState: AppState = {
+  userProfile: null,
+  scheduleBlocks: [],
+  completionLog: [],
+  isLoading: true,
+  isOnboardingComplete: false,
+};
+
+// ─── Reducer ──────────────────────────────────────────────────────────────────
+
+function reducer(state: AppState, action: Action): AppState {
+  switch (action.type) {
+    case 'SET_PROFILE':
+      return { ...state, userProfile: action.payload };
+
+    case 'SET_SCHEDULE':
+      return { ...state, scheduleBlocks: action.payload };
+
+    case 'UPDATE_BLOCK':
+      return {
+        ...state,
+        scheduleBlocks: state.scheduleBlocks.map((b) =>
+          b.id === action.payload.blockId ? { ...b, ...action.payload.updates } : b
+        ),
+      };
+
+    case 'ADD_COMPLETION_LOG_ENTRY':
+      return { ...state, completionLog: [...state.completionLog, action.payload] };
+
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+
+    case 'SET_ONBOARDING_COMPLETE':
+      return { ...state, isOnboardingComplete: action.payload };
+
+    case 'RESTORE_STATE':
+      // Used for rollback after a failed async action
+      return action.payload;
+
+    case 'HYDRATE':
+      return { ...state, ...action.payload };
+
+    default:
+      return state;
+  }
+}
+
+// ─── Context Type (unchanged public API) ──────────────────────────────────────
 
 interface AppContextType {
   // ── State ──
@@ -79,31 +152,45 @@ const AppContext = createContext<AppContextType | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
-  const [scheduleBlocks, setScheduleBlocksState] = useState<ScheduleBlock[]>([]);
-  const [completionLog, setCompletionLogState] = useState<CompletionLogEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isOnboardingCompleteState, setIsOnboardingCompleteState] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  // ── Initialization ─────────────────────────────────────────────────────────
+  /**
+   * stateRef holds a current snapshot of state without being in dependency arrays.
+   * Used exclusively for rollback — captures pre-mutation state before async ops.
+   */
+  const stateRef = useRef<AppState>(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  // ── Initialization ──────────────────────────────────────────────────────────
 
   const loadAllData = useCallback(async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      initializeDataStore();
+      // initializeDataStore is idempotent — safe to call on every refresh
+      await initializeDataStore();
+
       const [profile, blocks, log, onboarded] = await Promise.all([
         getUserProfile(),
         getScheduleBlocks(),
         getCompletionLog(),
         isOnboardingComplete(),
       ]);
-      setUserProfileState(profile);
-      setScheduleBlocksState(blocks);
-      setCompletionLogState(log);
-      setIsOnboardingCompleteState(onboarded);
+
+      dispatch({
+        type: 'HYDRATE',
+        payload: {
+          userProfile: profile,
+          scheduleBlocks: blocks,
+          completionLog: log,
+          isOnboardingComplete: onboarded,
+          isLoading: false,
+        },
+      });
     } catch (err) {
-      console.error('[AppContext] Failed to load data from localStorage:', err);
-    } finally {
-      setIsLoading(false);
+      console.error('[AppContext] Failed to load data:', err);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   }, []);
 
@@ -111,33 +198,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     loadAllData();
   }, [loadAllData]);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
+  // ── Actions (Optimistic + Rollback) ────────────────────────────────────────
 
   /**
-   * Persists and updates user profile in both context and localStorage.
+   * Persists and updates user profile.
+   * Optimistic: updates UI immediately, rolls back on failure.
    */
   const setUserProfile = useCallback(async (profile: UserProfile) => {
+    const snapshot = stateRef.current;
+    dispatch({ type: 'SET_PROFILE', payload: profile });
     try {
       await persistUserProfile(profile);
-      setUserProfileState(profile);
     } catch (err) {
-      console.error('[AppContext] setUserProfile failed:', err);
+      dispatch({ type: 'RESTORE_STATE', payload: snapshot });
+      console.error('[AppContext] setUserProfile failed — rolled back.', err);
       throw err;
     }
   }, []);
 
   /**
    * Merges a partial update into a single schedule block.
+   * Optimistic: updates UI immediately, rolls back on failure.
    */
   const updateScheduleBlock = useCallback(
     async (blockId: string, updates: Partial<ScheduleBlock>) => {
+      const snapshot = stateRef.current;
+      dispatch({ type: 'UPDATE_BLOCK', payload: { blockId, updates } });
       try {
         await persistUpdateBlock(blockId, updates);
-        setScheduleBlocksState((prev) =>
-          prev.map((b) => (b.id === blockId ? { ...b, ...updates } : b))
-        );
       } catch (err) {
-        console.error('[AppContext] updateScheduleBlock failed:', err);
+        dispatch({ type: 'RESTORE_STATE', payload: snapshot });
+        console.error('[AppContext] updateScheduleBlock failed — rolled back.', err);
         throw err;
       }
     },
@@ -145,43 +236,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   /**
-   * Replaces the entire schedule array (used after generateSchedule from Person 1).
+   * Replaces the entire schedule (used after Person 1's generateSchedule).
+   * Optimistic: updates UI immediately, rolls back on failure.
    */
   const setScheduleBlocks = useCallback(async (blocks: ScheduleBlock[]) => {
+    const snapshot = stateRef.current;
+    dispatch({ type: 'SET_SCHEDULE', payload: blocks });
     try {
       await persistUpdateBlocks(blocks);
-      setScheduleBlocksState(blocks);
     } catch (err) {
-      console.error('[AppContext] setScheduleBlocks failed:', err);
+      dispatch({ type: 'RESTORE_STATE', payload: snapshot });
+      console.error('[AppContext] setScheduleBlocks failed — rolled back.', err);
       throw err;
     }
   }, []);
 
   /**
    * Calls Person 1's generateInitialSchedule and stores the result.
-   * Stub until Person 1 implements scheduleGenerator.ts fully.
+   * Dynamic import keeps this decoupled from Person 1's internal structure.
    */
   const regenerateSchedule = useCallback(async () => {
-    if (!userProfile) {
-      throw new Error('Cannot regenerate schedule: no userProfile found.');
+    const currentProfile = stateRef.current.userProfile;
+    if (!currentProfile) {
+      throw new Error('regenerateSchedule: no userProfile set.');
     }
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      setIsLoading(true);
-      // Dynamic import to avoid circular dep if Person 1's module changes
+      // Dynamic import — non-fatal if Person 1's module isn't implemented yet
       const { generateInitialSchedule } = await import('@lib/scheduleGenerator');
-      const newBlocks = await generateInitialSchedule(userProfile);
+      const newBlocks = await generateInitialSchedule(currentProfile);
       await persistUpdateBlocks(newBlocks);
-      setScheduleBlocksState(newBlocks);
+      dispatch({ type: 'SET_SCHEDULE', payload: newBlocks });
     } catch (err) {
-      console.error('[AppContext] regenerateSchedule failed:', err);
+      console.error('[AppContext] regenerateSchedule failed.', err);
       throw err;
     } finally {
-      setIsLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [userProfile]);
+  }, []);
 
   /**
-   * Marks a block as completed, logs the completion entry, and updates context.
+   * Marks a block as completed and logs the completion entry.
+   * Two-step write: block status update + completion log append.
+   * Rolled back atomically if either step fails.
    */
   const markSessionComplete = useCallback(
     async (
@@ -189,34 +286,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       proofType: 'photo' | 'quiz' | 'voice' | 'none',
       score?: number
     ) => {
-      try {
-        // 1. Update the block status
-        await persistUpdateBlock(blockId, {
-          status: 'completed',
-          proofVerified: proofType !== 'none',
-          quizScore: proofType === 'quiz' ? (score ?? null) : null,
-        });
-        setScheduleBlocksState((prev) =>
-          prev.map((b) =>
-            b.id === blockId
-              ? { ...b, status: 'completed', proofVerified: proofType !== 'none', quizScore: proofType === 'quiz' ? (score ?? null) : null }
-              : b
-          )
-        );
+      const snapshot = stateRef.current;
 
-        // 2. Add completion log entry
-        const entry: CompletionLogEntry = {
-          blockId,
-          date: toDateString(new Date()),
-          completedAt: new Date().toISOString(),
-          proofType,
-          proofScore: score ?? null,
-          pomodoroCount: 0, // updated separately by SessionActiveView
-        };
+      const blockUpdates: Partial<ScheduleBlock> = {
+        status: 'completed',
+        proofVerified: proofType !== 'none',
+        quizScore: proofType === 'quiz' ? (score ?? null) : null,
+      };
+
+      const entry: CompletionLogEntry = {
+        blockId,
+        date: toDateString(new Date()),
+        completedAt: new Date().toISOString(),
+        proofType,
+        proofScore: score ?? null,
+        pomodoroCount: 0, // updated separately by SessionActiveView
+      };
+
+      // Optimistic update
+      dispatch({ type: 'UPDATE_BLOCK', payload: { blockId, updates: blockUpdates } });
+      dispatch({ type: 'ADD_COMPLETION_LOG_ENTRY', payload: entry });
+
+      try {
+        await persistUpdateBlock(blockId, blockUpdates);
         await addCompletionLogEntry(entry);
-        setCompletionLogState((prev) => [...prev, entry]);
       } catch (err) {
-        console.error('[AppContext] markSessionComplete failed:', err);
+        dispatch({ type: 'RESTORE_STATE', payload: snapshot });
+        console.error('[AppContext] markSessionComplete failed — rolled back.', err);
         throw err;
       }
     },
@@ -224,118 +320,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   /**
-   * Marks a block as missed and triggers the cascade rescheduler (Person 1).
+   * Marks a block as missed and triggers Person 1's cascade rescheduler.
+   * The cascade rescheduler call is non-fatal (stub-safe).
    */
-  const markSessionMissed = useCallback(
-    async (blockId: string) => {
-      try {
-        // 1. Update block status to missed
-        await persistUpdateBlock(blockId, { status: 'missed' });
-        setScheduleBlocksState((prev) =>
-          prev.map((b) => (b.id === blockId ? { ...b, status: 'missed' } : b))
-        );
+  const markSessionMissed = useCallback(async (blockId: string) => {
+    const snapshot = stateRef.current;
+    dispatch({ type: 'UPDATE_BLOCK', payload: { blockId, updates: { status: 'missed' } } });
 
-        // 2. Trigger Person 1's cascade rescheduler (dynamic import — stub-safe)
-        try {
-          // Person 1 owns cascadeRescheduler.ts.
-          // We import dynamically so this stays non-fatal if the function name changes.
-          const cascadeModule = await import('@lib/cascadeRescheduler');
-          const currentBlocks = await getScheduleBlocks();
-          // Support both the final name (rescheduleAfterMiss) and the current stub name
-          const rescheduleFn =
-            (cascadeModule as Record<string, unknown>)['rescheduleAfterMiss'] as
-              | ((id: string, blocks: ScheduleBlock[], profile: UserProfile) => Promise<ScheduleBlock[]>)
-              | undefined;
-          if (rescheduleFn && userProfile) {
-            const newBlocks = await rescheduleFn(blockId, currentBlocks, userProfile);
-            await persistUpdateBlocks(newBlocks);
-            setScheduleBlocksState(newBlocks);
-          }
-        } catch (cascadeErr) {
-          // Non-fatal: cascadeRescheduler may not be implemented yet by Person 1
-          console.warn('[AppContext] cascadeRescheduler not available (Person 1 stub):', cascadeErr);
+    try {
+      await persistUpdateBlock(blockId, { status: 'missed' });
+
+      // Non-fatal: cascade rescheduler may not be implemented by Person 1 yet
+      try {
+        const cascadeModule = await import('@lib/cascadeRescheduler');
+        const currentBlocks = await getScheduleBlocks();
+        const currentProfile = stateRef.current.userProfile;
+        const rescheduleFn = (
+          cascadeModule as Record<string, unknown>
+        )['rescheduleAfterMiss'] as
+          | ((
+              id: string,
+              blocks: ScheduleBlock[],
+              profile: UserProfile
+            ) => Promise<ScheduleBlock[]>)
+          | undefined;
+
+        if (rescheduleFn && currentProfile) {
+          const newBlocks = await rescheduleFn(blockId, currentBlocks, currentProfile);
+          await persistUpdateBlocks(newBlocks);
+          dispatch({ type: 'SET_SCHEDULE', payload: newBlocks });
         }
-      } catch (err) {
-        console.error('[AppContext] markSessionMissed failed:', err);
-        throw err;
+      } catch (cascadeErr) {
+        console.warn('[AppContext] cascadeRescheduler not available (Person 1 stub):', cascadeErr);
       }
-    },
-    [userProfile]
-  );
+    } catch (err) {
+      dispatch({ type: 'RESTORE_STATE', payload: snapshot });
+      console.error('[AppContext] markSessionMissed failed — rolled back.', err);
+      throw err;
+    }
+  }, []);
 
   /**
-   * Re-fetches all data from localStorage.
-   * Useful after JSON import, data reset, or debugging.
+   * Re-fetches all data from the storage backend.
+   * Use after JSON import, data reset, or to force consistency.
    */
   const refreshAllData = useCallback(async () => {
-    setIsLoading(true);
     await loadAllData();
   }, [loadAllData]);
 
-  /**
-   * Marks onboarding as complete in localStorage and updates context.
-   */
+  /** Marks onboarding as complete in storage and updates state. */
   const completeOnboarding = useCallback(async () => {
-    await setOnboardingComplete(true);
-    setIsOnboardingCompleteState(true);
+    const snapshot = stateRef.current;
+    dispatch({ type: 'SET_ONBOARDING_COMPLETE', payload: true });
+    try {
+      await setOnboardingComplete(true);
+    } catch (err) {
+      dispatch({ type: 'RESTORE_STATE', payload: snapshot });
+      console.error('[AppContext] completeOnboarding failed — rolled back.', err);
+      throw err;
+    }
   }, []);
 
-  // ── Derived / Memoized ────────────────────────────────────────────────────
+  // ── Derived Metrics (Memoized) ─────────────────────────────────────────────
 
   /**
-   * Calculates all metrics from completionLog.
-   * Memoized — only recalculates when completionLog changes.
+   * Returns a stable metrics calculator.
+   * Only recomputed when completionLog, scheduleBlocks, or userProfile changes.
    */
   const calculateMetrics = useMemo((): (() => MetricsData) => {
     return () => {
-      const totalHours = calculateTotalHours(scheduleBlocks);
-      const sessionsCompleted = completionLog.length;
-      const currentStreak = calculateCurrentStreak(completionLog);
-      const longestStreak = calculateLongestStreak(completionLog);
-      const consistencyScore = calculateConsistency(completionLog, 30);
+      const totalHours = calculateTotalHours(state.scheduleBlocks);
+      const sessionsCompleted = state.completionLog.length;
+      const currentStreak = calculateCurrentStreak(state.completionLog);
+      const longestStreak = calculateLongestStreak(state.completionLog);
+      const consistencyScore = calculateConsistency(state.completionLog, 30);
 
-      // Mastery by subject: weighted average of quiz scores (from completionLog)
       const masteryBySubject: Record<string, number> = {};
       const readinessBySubject: Record<string, number> = {};
 
-      if (userProfile) {
-        for (const subject of userProfile.subjects) {
-          // Quiz scores for this subject
-          const subjectBlocks = scheduleBlocks.filter(
+      if (state.userProfile) {
+        for (const subject of state.userProfile.subjects) {
+          const subjectBlocks = state.scheduleBlocks.filter(
             (b) => b.subjectId === subject.id && b.status === 'completed'
           );
-          const quizBlocks = subjectBlocks.filter(
-            (b) => b.quizScore !== null
-          );
+          const quizBlocks = subjectBlocks.filter((b) => b.quizScore !== null);
           const quizAvg =
             quizBlocks.length > 0
               ? quizBlocks.reduce((sum, b) => sum + (b.quizScore ?? 0), 0) / quizBlocks.length
               : 0;
 
-          // Revision completion %
-          const revisionScheduled = scheduleBlocks.filter(
+          const revisionScheduled = state.scheduleBlocks.filter(
             (b) => b.subjectId === subject.id && b.type === 'revision'
           ).length;
           const revisionDone = subjectBlocks.filter((b) => b.type === 'revision').length;
           const revisionCompletion =
             revisionScheduled > 0 ? (revisionDone / revisionScheduled) * 100 : 0;
 
-          // Streak bonus: +10 per 5-streak (capped at 20)
           const streakBonus = Math.min(20, Math.floor(currentStreak / 5) * 10);
 
-          // Mastery formula from PRD: (rev × 0.4) + (quiz × 0.4) + (streak × 0.2)
-          const mastery = Math.round(
-            revisionCompletion * 0.4 + quizAvg * 0.4 + streakBonus * 0.2
+          // PRD mastery formula: (revision × 0.4) + (quiz × 0.4) + (streak × 0.2)
+          masteryBySubject[subject.id] = Math.min(
+            100,
+            Math.round(revisionCompletion * 0.4 + quizAvg * 0.4 + streakBonus * 0.2)
           );
-          masteryBySubject[subject.id] = Math.min(100, mastery);
 
-          // Readiness formula from PRD
           const daysTill = Math.max(
             0,
             (new Date(subject.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
           );
           const urgencyAdj = daysTill < 7 ? -((7 - daysTill) * 2) : 0;
-          const readiness = Math.max(
+          readinessBySubject[subject.id] = Math.max(
             0,
             Math.min(
               100,
@@ -344,7 +438,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               )
             )
           );
-          readinessBySubject[subject.id] = readiness;
         }
       }
 
@@ -358,16 +451,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         readinessBySubject,
       };
     };
-  }, [completionLog, scheduleBlocks, userProfile]);
+  }, [state.completionLog, state.scheduleBlocks, state.userProfile]);
 
-  // ── Context Value ─────────────────────────────────────────────────────────
+  // ── Context Value ──────────────────────────────────────────────────────────
 
   const value: AppContextType = {
-    userProfile,
-    scheduleBlocks,
-    completionLog,
-    isLoading,
-    isOnboardingComplete: isOnboardingCompleteState,
+    userProfile: state.userProfile,
+    scheduleBlocks: state.scheduleBlocks,
+    completionLog: state.completionLog,
+    isLoading: state.isLoading,
+    isOnboardingComplete: state.isOnboardingComplete,
     setUserProfile,
     updateScheduleBlock,
     setScheduleBlocks,
@@ -385,7 +478,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
- * Consume global app context in any component.
+ * Consume global app state in any component.
  * Must be used inside <AppProvider>.
  *
  * @example

@@ -16,10 +16,23 @@
  */
 
 import { AppDataStore, MetricsData, ScheduleBlock, UserProfile } from '@/types';
-import { exportDataAsJSON, importDataFromJSON as importFromStore, validateDataIntegrity } from './dataStore';
+import { exportDataAsJSON, importDataFromJSON as importFromStore, validateDataIntegrity, SCHEMA_VERSION } from './dataStore';
 import { formatDateShort, toDateString } from './timeUtils';
 
 const MAX_IMPORT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+/** Backs up current data to a timestamped localStorage key before an overwrite. */
+async function backupCurrentData(): Promise<void> {
+  try {
+    const json = await exportDataAsJSON();
+    const key = `studyos_backup_${Date.now()}`;
+    localStorage.setItem(key, json);
+    console.log(`[exportImport] Auto-backup saved to key: ${key}`);
+  } catch {
+    // Non-fatal — backup is best-effort
+    console.warn('[exportImport] Auto-backup failed (non-fatal).');
+  }
+}
 
 // ─── PDF Export ───────────────────────────────────────────────────────────────
 
@@ -199,13 +212,13 @@ export async function exportScheduleAsiCal(
 
 /**
  * Exports the full data store as a JSON file and triggers a browser download.
- * Wraps the `exportDataAsJSON()` from dataStore.ts.
+ * Wraps the async `exportDataAsJSON()` from dataStore.ts.
  */
-export function exportDataAsJSONFile(
-  _allData?: AppDataStore, // kept for API compatibility; data is always read from localStorage
+export async function exportDataAsJSONFile(
+  _allData?: AppDataStore, // kept for API compatibility; data is always read from storage
   fileName?: string
-): void {
-  const jsonString = exportDataAsJSON();
+): Promise<void> {
+  const jsonString = await exportDataAsJSON();
   const blob = new Blob([jsonString], { type: 'application/json' });
   const date = toDateString(new Date());
   triggerDownload(blob, fileName ?? `StudyOS_Backup_${date}.json`);
@@ -214,25 +227,32 @@ export function exportDataAsJSONFile(
 // ─── JSON Import ──────────────────────────────────────────────────────────────
 
 /**
- * Accepts a File from <input type="file" accept=".json">, validates it, and
- * imports the data into localStorage (full overwrite for MVP).
+ * Accepts a File from <input type="file" accept=".json">, validates it,
+ * creates an auto-backup, then imports the data (full overwrite for MVP).
  *
  * Returns { success, message, entriesImported }.
+ * Never throws — returns { success: false } on error.
  */
 export async function importDataFromJSON(
   file: File
 ): Promise<{ success: boolean; message: string; entriesImported: number }> {
   if (file.size > MAX_IMPORT_SIZE_BYTES) {
-    throw new Error(
-      `File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 10 MB.`
-    );
+    return {
+      success: false,
+      message: `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is 10 MB.`,
+      entriesImported: 0,
+    };
   }
 
   let text: string;
   try {
     text = await file.text();
   } catch {
-    throw new Error('Could not read the file. Please check encoding (UTF-8 required).');
+    return {
+      success: false,
+      message: 'Could not read the file. Ensure it is UTF-8 encoded.',
+      entriesImported: 0,
+    };
   }
 
   // Validate JSON parse
@@ -240,23 +260,42 @@ export async function importDataFromJSON(
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error('Invalid JSON file. The file could not be parsed.');
+    return { success: false, message: 'Invalid JSON file — could not be parsed.', entriesImported: 0 };
   }
 
   // Structural check
   const data = parsed as Partial<AppDataStore>;
   if (!data || typeof data !== 'object') {
-    throw new Error('Import failed: file root must be a JSON object.');
+    return { success: false, message: 'Import failed: file root must be a JSON object.', entriesImported: 0 };
   }
   if (!data.scheduleBlocks) {
-    throw new Error('Import failed: missing "scheduleBlocks" in exported data.');
+    return { success: false, message: 'Import failed: missing "scheduleBlocks" in file.', entriesImported: 0 };
   }
 
-  // Import to localStorage
-  await importFromStore(text);
+  // Schema version guard
+  if (typeof data.version === 'number' && data.version > SCHEMA_VERSION) {
+    return {
+      success: false,
+      message: `Import failed: file uses schema v${data.version} but app supports up to v${SCHEMA_VERSION}. Please update the app.`,
+      entriesImported: 0,
+    };
+  }
 
-  // Validate after import
-  const { valid, errors } = validateDataIntegrity();
+  // Auto-backup existing data before overwriting
+  await backupCurrentData();
+
+  try {
+    await importFromStore(text);
+  } catch (err) {
+    return {
+      success: false,
+      message: `Import failed during write: ${(err as Error).message}`,
+      entriesImported: 0,
+    };
+  }
+
+  // Post-import integrity check
+  const { valid, errors } = await validateDataIntegrity();
   if (!valid) {
     console.warn('[exportImport] Post-import integrity warnings:', errors);
   }

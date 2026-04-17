@@ -73,6 +73,7 @@ export interface DailyLogEntry {
 
 // APP STATE
 export interface AppDataStore {
+  version: number;
   userProfile: UserProfile | null;
   scheduleBlocks: ScheduleBlock[];
   completionLog: CompletionLogEntry[];
@@ -84,6 +85,25 @@ export interface AppDataStore {
     appVersion: string;
     deviceId: string;
   };
+}
+
+// STORAGE ERROR
+export type StorageErrorCode =
+  | 'STORAGE_QUOTA_EXCEEDED'
+  | 'DATA_CORRUPTION'
+  | 'VALIDATION_ERROR'
+  | 'FIREBASE_UNAVAILABLE'
+  | 'MIGRATION_FAILED';
+
+export class StorageError extends Error {
+  readonly code: StorageErrorCode;
+  constructor(code: StorageErrorCode, message: string) {
+    super(message);
+    this.code = code;
+    this.name = 'StorageError';
+    // Maintain proper prototype chain for instanceof checks
+    Object.setPrototypeOf(this, StorageError.prototype);
+  }
 }
 
 // METRICS

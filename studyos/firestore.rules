@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// StudyOS — Firestore Security Rules
+//
+// Data model: users/{uid}/store/{key}
+// Each user (anonymous or logged in) can only access their own data.
+//
+// Deploy: firebase deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── User Store ─────────────────────────────────────────────────────────
+    // Each user can read/write ONLY their own store documents.
+    // Anonymous users (auth.uid exists after signInAnonymously) are allowed.
+    match /users/{uid}/store/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == uid;
+    }
+
+    // ── Deny everything else ───────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
