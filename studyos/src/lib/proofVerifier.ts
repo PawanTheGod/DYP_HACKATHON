@@ -20,7 +20,7 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 // --- Initialize Gemini for Vision Verification (Photos) ---
 const genAI = new GoogleGenerativeAI(ENV.GEMINI_API_KEY || '');
-const GEMINI_VISION_MODEL = 'gemini-2.5-flash';
+const GEMINI_VISION_MODEL = 'gemini-1.5-flash';
 
 export interface QuizQuestion {
   question: string;

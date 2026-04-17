@@ -122,27 +122,62 @@ export const ActionModal: React.FC<ActionModalProps> = ({ block, onClose, mode =
     }
   };
 
+  const recognitionRef = useRef<any>(null);
+
   const startVoiceRecording = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError("Voice recognition not supported in this browser.");
+      setError("Voice recognition not supported in this browser. Try Chrome or Edge.");
       return;
+    }
+
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch(e) {}
     }
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
-    recognition.interimResults = false;
+    recognition.interimResults = true; // Use interim for better UI feel
     recognition.maxAlternatives = 1;
+    recognition.continuous = false;
 
-    recognition.onstart = () => setIsRecording(true);
-    recognition.onend = () => setIsRecording(false);
+    recognition.onstart = () => {
+      console.log('[Sage] Voice recognition started');
+      setIsRecording(true);
+      setError(null);
+    };
+
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0])
+        .map((result: any) => result.transcript)
+        .join('');
       setReason(transcript);
     };
-    recognition.onerror = () => setError("Voice capture failed.");
 
-    recognition.start();
+    recognition.onerror = (event: any) => {
+      console.error('[Sage] Voice Error:', event.error);
+      setIsRecording(false);
+      if (event.error === 'not-allowed') {
+        setError("Microphone access blocked. Please enable it in browser settings.");
+      } else {
+        setError(`Voice capture failed: ${event.error}`);
+      }
+    };
+
+    recognition.onend = () => {
+      console.log('[Sage] Voice recognition ended');
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('[Sage] Start Error:', err);
+      setIsRecording(false);
+      setError("Failed to start voice listener.");
+    }
   };
 
   const handleMissSubmit = async () => {
