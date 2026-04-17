@@ -193,7 +193,7 @@ Ensure exams are proper YYYY-MM-DD dates in the future.
     let parsed: any;
     try {
       // In case the model returns markdown ticks despite instructions, strip them
-      const cleanString = jsonString.replace(/^\\`\\`\\`json\\n?/?i, '').replace(/\\n?\\`\\`\\`$/i, '');
+      const cleanString = jsonString.replace(/^```json\n?/i, '').replace(/\n?```$/i, '');
       parsed = JSON.parse(cleanString);
     } catch (parseError) {
       console.error('Failed to parse Groq extraction JSON:', jsonString);

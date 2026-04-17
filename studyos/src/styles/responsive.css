@@ -1,4 +1,6 @@
-/* TODO: Person 4 - Implement responsive breakpoints and mobile-specific adjustments */
-@media (max-width: 640px) {
-  .mobile-hide { display: none; }
+/* Responsive utilities */
+@media (min-width: 768px) {
+  .md\:max-w-2xl {
+    max-width: 48rem;
+  }
 }

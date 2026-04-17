@@ -9,9 +9,10 @@
  */
 
 // Helper to safely access process.env without crashing in strict browser environments
-const getProcessEnv = (key: string) => {
+const getProcessEnv = (key: string): string | undefined => {
     try {
-        return process.env[key];
+        // @ts-ignore
+        return typeof process !== 'undefined' ? process.env[key] : undefined;
     } catch (e) {
         return undefined;
     }

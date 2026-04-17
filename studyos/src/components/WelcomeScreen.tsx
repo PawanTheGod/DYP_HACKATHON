@@ -1,17 +1,21 @@
 import React from 'react';
-import { Button } from './ui/Button';
+import { OnboardingChat } from './OnboardingChat';
 
-// TODO: Person 4 - Implement high-impact welcome screen with animations
 export const WelcomeScreen: React.FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-      <h1 className="text-4xl font-bold text-slate-900 mb-6 animate-slideUp">Welcome to StudyOS</h1>
-      <p className="max-w-md text-slate-600 mb-10 animate-slideUp" style={{ animationDelay: '100ms' }}>
-        Your personal AI study companion that adapts to your energy, pace, and lifestyle.
-      </p>
-      <Button className="animate-slideUp" style={{ animationDelay: '200ms' }}>
-        Get Started
-      </Button>
+    <div className="flex flex-col min-h-screen bg-surface text-on-surface">
+      <header className="p-6 text-center">
+        <h1 className="text-3xl font-headline font-extrabold text-primary animate-slideDown">
+          StudyOS
+        </h1>
+        <p className="text-sm font-body text-outline mt-1 animate-slideDown" style={{ animationDelay: '100ms' }}>
+          By Sage Intelligence
+        </p>
+      </header>
+      
+      <main className="flex-1 w-full max-w-2xl mx-auto flex flex-col p-4">
+        <OnboardingChat />
+      </main>
     </div>
   );
 };

@@ -1,8 +1,1 @@
-@keyframes ripple {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-
-.animate-ripple {
-  animation: ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
+/* Animations managed via globals.css @keyframes. Leave empty for now. */
