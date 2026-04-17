@@ -123,7 +123,7 @@ export const Dashboard: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowSettings(false)}>
             <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setShowSettings(false)}
                   className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors z-10"
                 >
