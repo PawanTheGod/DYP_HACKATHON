@@ -16,7 +16,7 @@ const groq = new Groq({
   dangerouslyAllowBrowser: true,
 });
 
-const GROQ_MODEL = 'llama3-70b-8192';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 export interface ScheduleGenerationResult {
   blocks: ScheduleBlock[];
@@ -159,8 +159,10 @@ export async function generateSchedule(userProfile: UserProfile, daysAhead: numb
 
   const systemPrompt = generateSagePrompt(userProfile, 'schedule_gen');
   
+  const todayStr = new Date().toISOString().split('T')[0];
   const instructionBlock = `
-Generate a ${daysAhead}-day study schedule. Return ONLY a valid JSON array of ScheduleBlock objects. No explanations, no markdown.
+Generate a ${daysAhead}-day study schedule starting exactly from today (${todayStr}). Output dates must use YYYY-MM-DD format starting from ${todayStr}.
+Return ONLY a valid JSON array of ScheduleBlock objects. No explanations, no markdown.
 
 Priority Scores for subjects: ${JSON.stringify(priorityScores)}
 User Profile Constraints: ${JSON.stringify(userProfile.constraints)}
@@ -225,7 +227,6 @@ Constraints to enforce:
     // "Auto-save to Firebase under key..."
     // Since Firebase data fetching / saving will be handled at the DataStore layer (Task 3.1)
     // We'll log saving behavior to signify completion for this subsystem tier.
-    const todayStr = new Date().toISOString().split('T')[0];
     const firebaseKey = 'schedule_blocks_' + todayStr;
     console.info(`[Info] In production, this output will be saved to Firebase path: ${firebaseKey}`);
 

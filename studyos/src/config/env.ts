@@ -2,10 +2,6 @@
  * src/config/env.ts
  * 
  * Cross-platform environment variable resolver.
- * 
- * Automatically detects whether the application is running in an Expo (React Native) 
- * build via `process.env.EXPO_PUBLIC_...` or a standard Web build via `import.meta.env.VITE_...`.
- * This prevents critical crash bugs when transitioning codebases across mobile and web.
  */
 
 // Helper to safely access process.env without crashing in strict browser environments
@@ -18,43 +14,32 @@ const getProcessEnv = (key: string): string | undefined => {
     }
 };
 
-// Helper to safely access import.meta.env without crashing in strict Node/Native environments
-const getMetaEnv = (key: string) => {
-    try {
-        // @ts-ignore - Ignore TS error in environments where import.meta is fully strictly typed
-        return import.meta.env[key];
-    } catch (e) {
-        return undefined;
-    }
-};
+// Vite static injection references
+// We MUST use literal `import.meta.env.VITE_XXX` so Vite's static analyzer can replace them during build.
+const VITE_GROQ = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GROQ_API_KEY : '';
+const VITE_GEMINI = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '';
+const VITE_SARVAM = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_SARVAM_API_KEY : '';
+const VITE_GOOGLE = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GOOGLE_SPEECH_API_KEY : '';
 
-/**
- * Universal Key Resolver
- */
-function resolveKey(expoKey: string, viteKey: string): string {
-    // 1. Try Expo natively
-    const expoVal = getProcessEnv(expoKey);
-    if (expoVal) return expoVal;
-
-    // 2. Try Vite / Browser natively
-    const viteVal = getMetaEnv(viteKey);
-    if (viteVal) return viteVal;
-
-    // 3. Fallback safely
-    return '';
-}
+const VITE_FB_API = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FIREBASE_API_KEY : '';
+const VITE_FB_AUTH = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FIREBASE_AUTH_DOMAIN : '';
+const VITE_FB_PROJ = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FIREBASE_PROJECT_ID : '';
+const VITE_FB_BUCKET = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FIREBASE_STORAGE_BUCKET : '';
+const VITE_FB_SENDER = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID : '';
+const VITE_FB_APP = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FIREBASE_APP_ID : '';
+const VITE_FB_MEASURE = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FIREBASE_MEASUREMENT_ID : '';
 
 export const ENV = {
-    GROQ_API_KEY: resolveKey('EXPO_PUBLIC_GROQ_API_KEY', 'VITE_GROQ_API_KEY'),
-    GEMINI_API_KEY: resolveKey('EXPO_PUBLIC_GEMINI_API_KEY', 'VITE_GEMINI_API_KEY'),
-    SARVAM_API_KEY: resolveKey('EXPO_PUBLIC_SARVAM_API_KEY', 'VITE_SARVAM_API_KEY'),
-    GOOGLE_SPEECH_API_KEY: resolveKey('EXPO_PUBLIC_GOOGLE_SPEECH_API_KEY', 'VITE_GOOGLE_SPEECH_API_KEY'),
+    GROQ_API_KEY: getProcessEnv('EXPO_PUBLIC_GROQ_API_KEY') || VITE_GROQ || '',
+    GEMINI_API_KEY: getProcessEnv('EXPO_PUBLIC_GEMINI_API_KEY') || VITE_GEMINI || '',
+    SARVAM_API_KEY: getProcessEnv('EXPO_PUBLIC_SARVAM_API_KEY') || VITE_SARVAM || '',
+    GOOGLE_SPEECH_API_KEY: getProcessEnv('EXPO_PUBLIC_GOOGLE_SPEECH_API_KEY') || VITE_GOOGLE || '',
     
-    FIREBASE_API_KEY: resolveKey('EXPO_PUBLIC_FIREBASE_API_KEY', 'VITE_FIREBASE_API_KEY'),
-    FIREBASE_AUTH_DOMAIN: resolveKey('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_AUTH_DOMAIN'),
-    FIREBASE_PROJECT_ID: resolveKey('EXPO_PUBLIC_FIREBASE_PROJECT_ID', 'VITE_FIREBASE_PROJECT_ID'),
-    FIREBASE_STORAGE_BUCKET: resolveKey('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET', 'VITE_FIREBASE_STORAGE_BUCKET'),
-    FIREBASE_MESSAGING_SENDER_ID: resolveKey('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', 'VITE_FIREBASE_MESSAGING_SENDER_ID'),
-    FIREBASE_APP_ID: resolveKey('EXPO_PUBLIC_FIREBASE_APP_ID', 'VITE_FIREBASE_APP_ID'),
-    FIREBASE_MEASUREMENT_ID: resolveKey('EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID', 'VITE_FIREBASE_MEASUREMENT_ID'),
+    FIREBASE_API_KEY: getProcessEnv('EXPO_PUBLIC_FIREBASE_API_KEY') || VITE_FB_API || '',
+    FIREBASE_AUTH_DOMAIN: getProcessEnv('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN') || VITE_FB_AUTH || '',
+    FIREBASE_PROJECT_ID: getProcessEnv('EXPO_PUBLIC_FIREBASE_PROJECT_ID') || VITE_FB_PROJ || '',
+    FIREBASE_STORAGE_BUCKET: getProcessEnv('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET') || VITE_FB_BUCKET || '',
+    FIREBASE_MESSAGING_SENDER_ID: getProcessEnv('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID') || VITE_FB_SENDER || '',
+    FIREBASE_APP_ID: getProcessEnv('EXPO_PUBLIC_FIREBASE_APP_ID') || VITE_FB_APP || '',
+    FIREBASE_MEASUREMENT_ID: getProcessEnv('EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID') || VITE_FB_MEASURE || '',
 };
