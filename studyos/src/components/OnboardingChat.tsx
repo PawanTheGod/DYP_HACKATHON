@@ -133,13 +133,13 @@ export const OnboardingChat: React.FC = () => {
     <div className="flex-1 flex flex-col bg-surface-container-low rounded-[2rem] shadow-card overflow-hidden border border-outline-variant/20 relative glass-gradient">
       
       {/* Header */}
-      <div className="p-4 border-b border-outline-variant/10 bg-surface-container/50 backdrop-blur-md flex items-center gap-3 relative z-10">
-        <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+      <div className="p-4 border-b border-outline-variant/10 bg-surface-container/30 backdrop-blur-md flex items-center gap-3 relative z-10">
+        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <span className="material-symbols-outlined icon-fill">robot_2</span>
         </div>
         <div>
             <h2 className="font-headline font-semibold text-on-surface">Sage Interface</h2>
-            <p className="text-xs font-body text-outline">Smart Onboarding Session</p>
+            <p className="text-xs font-body text-outline uppercase tracking-widest leading-none mt-0.5">Onboarding Assistant</p>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ export const OnboardingChat: React.FC = () => {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col relative z-10">
         {messages.map(m => (
           <div key={m.id} className={`max-w-[85%] flex ${m.role === 'user' ? 'self-end' : 'self-start'}`}>
-            <div className={`p-4 rounded-2xl ${m.role === 'user' ? 'bg-primary text-on-primary rounded-br-sm' : 'bg-surface-container-lowest text-on-surface rounded-bl-sm shadow-card-sm'}`}>
+            <div className={`p-4 rounded-2xl ${m.role === 'user' ? 'bg-on-surface text-surface rounded-br-sm shadow-md' : 'bg-surface-container-lowest text-on-surface rounded-bl-sm shadow-card-sm'}`}>
               <p className="text-sm font-body leading-relaxed">{m.content}</p>
             </div>
           </div>
@@ -186,7 +186,7 @@ export const OnboardingChat: React.FC = () => {
             type="button"
             onClick={() => handleSend(inputText)}
             disabled={!inputText.trim() || isProcessing || isRecording}
-            className="p-2 rounded-full bg-primary text-on-primary disabled:opacity-50 transition-opacity"
+            className="p-2 rounded-full bg-on-surface text-surface disabled:opacity-50 transition-opacity"
           >
             <span className="material-symbols-outlined icon-fill transform -rotate-45 ml-1">send</span>
           </button>

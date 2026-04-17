@@ -12,7 +12,7 @@ interface ActionModalProps {
 type ModalStep = 'options' | 'photo' | 'quiz' | 'quiz_taking' | 'quiz_result' | 'miss_options' | 'miss_text' | 'miss_voice' | 'success';
 
 export const ActionModal: React.FC<ActionModalProps> = ({ block, onClose, mode = 'complete' }) => {
-  const { markSessionComplete, markSessionMissed, updateScheduleBlock, userProfile } = useAppContext();
+  const { markSessionComplete, markSessionMissed, userProfile } = useAppContext();
   
   const [step, setStep] = useState<ModalStep>(mode === 'complete' ? 'options' : 'miss_options');
   const [isLoading, setIsLoading] = useState(false);
@@ -137,12 +137,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ block, onClose, mode =
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
-    recognition.interimResults = true; // Use interim for better UI feel
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.continuous = false;
 
     recognition.onstart = () => {
-      console.log('[Sage] Voice recognition started');
       setIsRecording(true);
       setError(null);
     };
@@ -156,7 +155,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ block, onClose, mode =
     };
 
     recognition.onerror = (event: any) => {
-      console.error('[Sage] Voice Error:', event.error);
       setIsRecording(false);
       if (event.error === 'not-allowed') {
         setError("Microphone access blocked. Please enable it in browser settings.");
@@ -166,7 +164,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ block, onClose, mode =
     };
 
     recognition.onend = () => {
-      console.log('[Sage] Voice recognition ended');
       setIsRecording(false);
     };
 
@@ -174,7 +171,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ block, onClose, mode =
     try {
       recognition.start();
     } catch (err) {
-      console.error('[Sage] Start Error:', err);
       setIsRecording(false);
       setError("Failed to start voice listener.");
     }
@@ -452,15 +448,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ block, onClose, mode =
         </div>
 
         {/* Footer Stats Tooltip */}
-        <div className="px-6 py-4 bg-surface-container-low/50 border-t border-outline-variant/5 flex justify-between items-center text-outline">
+        <div className="px-6 py-4 bg-surface-container-low flex justify-between items-center text-outline">
            <div className="flex items-center gap-1">
              <span className="material-symbols-outlined text-xs">schedule</span>
-             <span className="text-[10px] font-label font-medium uppercase tracking-tighter">{formatTime(block.startTime)} • {getDuration()} mins</span>
+             <span className="text-[10px] font-label font-medium uppercase tracking-tighter">{formatTime(block.startTime)} - {getDuration()} mins</span>
            </div>
            {step !== 'success' && step !== 'options' && step !== 'miss_options' && (
               <button onClick={() => setStep(mode === 'complete' ? 'options' : 'miss_options')} className="text-[10px] font-label font-bold uppercase text-primary hover:underline">Go Back</button>
            )}
-        </div>
+         </div>
       </div>
     </div>
   );

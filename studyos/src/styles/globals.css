@@ -6,29 +6,29 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: #3525cd;
-  --color-primary-container: #4f46e5;
+  --color-primary: #000000;
+  --color-primary-container: #1a1a1a;
   --color-on-primary: #ffffff;
-  --color-secondary: #712ae2;
-  --color-secondary-container: #8a4cfc;
-  --color-tertiary: #005338;
-  --color-surface: #f7f9fb;
-  --color-background: #f7f9fb;
-  --color-on-surface: #191c1e;
-  --color-on-surface-variant: #464555;
+  --color-secondary: #404040;
+  --color-secondary-container: #525252;
+  --color-tertiary: #262626;
+  --color-surface: #ffffff;
+  --color-background: #ffffff;
+  --color-on-surface: #000000;
+  --color-on-surface-variant: #525252;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f2f4f6;
-  --color-surface-container: #eceef0;
-  --color-surface-container-high: #e6e8ea;
-  --color-surface-container-highest: #e0e3e5;
-  --color-error: #ba1a1a;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
-  --color-outline: #777587;
-  --color-outline-variant: #c7c4d8;
-  --color-tertiary-fixed-dim: #4edea3;
-  --color-tertiary-container: #006e4b;
-  --color-on-tertiary-fixed-variant: #005236;
+  --color-surface-container-low: #f8f8f8;
+  --color-surface-container: #f2f2f2;
+  --color-surface-container-high: #e5e5e5;
+  --color-surface-container-highest: #d4d4d4;
+  --color-error: #000000;
+  --color-error-container: #f2f2f2;
+  --color-on-error-container: #000000;
+  --color-outline: #a3a3a3;
+  --color-outline-variant: #e5e5e5;
+  --color-tertiary-fixed-dim: #737373;
+  --color-tertiary-container: #262626;
+  --color-on-tertiary-fixed-variant: #000000;
 }
 
 * {
@@ -87,6 +87,24 @@ h1, h2, h3, h4, h5, h6, .font-headline {
 
 .progress-gradient {
   background: linear-gradient(90deg, #712ae2 0%, #4edea3 100%);
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-on-surface text-white font-headline font-bold py-4 px-8 rounded-2xl shadow-xl transition-all active:scale-[0.98] hover:bg-neutral-800 flex items-center justify-center gap-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-primary text-white font-headline font-bold py-4 px-8 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] hover:bg-primary/90 flex items-center justify-center gap-2;
+  }
+  
+  .btn-outline {
+    @apply bg-white border border-neutral-200 text-on-surface font-headline font-bold py-4 px-8 rounded-2xl transition-all active:scale-[0.98] hover:bg-neutral-50 flex items-center justify-center gap-2;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-on-surface-variant font-headline font-bold py-4 px-8 rounded-2xl transition-all hover:bg-surface-container active:scale-[0.98] flex items-center justify-center gap-2;
+  }
 }
 
 /* AI shimmer animation */
